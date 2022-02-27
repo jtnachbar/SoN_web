@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "vue-google-login": "^2.0.5"
+  }
+}

@@ -1,0 +1,16 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+itsdangerous = "==2.0.1"
+Flask = "==1.1.2"
+Flask-Cors = "==3.0.10"
+sqlalchemy = "*"
+python-cas = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.9"
