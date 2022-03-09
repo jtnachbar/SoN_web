@@ -11,7 +11,7 @@
     </div>
     <br>
     <div class="row">
-      <div class="btn-group-vertical">
+      <div class="btn-group-vertical col-sm-4 </div>">
         <button class="btn btn-primary" type="button">Edit Students</button>
         <br>
         <button class="btn btn-primary" type="button">Edit Teaching Assistants</button>
@@ -19,6 +19,9 @@
         <button class="btn btn-primary" type="button">Edit Assignments</button>
         <br>
         <button class="btn btn-primary" type="button">Disable Access</button>
+      </div>
+      <div class="col-sm-4 </div>">
+        <ManageTA />
       </div>
     </div>
     <b-modal ref="addBookModal"
@@ -100,6 +103,7 @@
 import Vue from 'vue';
 import axios from 'axios';
 import VueSessionStorage from 'vue-sessionstorage';
+import ManageTA from './ManageTA.vue';
 
 Vue.use(VueSessionStorage);
 Vue.config.productionTip = false;
@@ -125,6 +129,7 @@ export default {
     };
   },
   components: {
+    ManageTA,
   },
   methods: {
     getBooks() {

@@ -25,6 +25,13 @@ class Class(Base):
                 res.append(s)
         return res
 
+    def get_enrolled(self):
+        res = []
+        for s in self.students:
+            if not s.is_TA:
+                res.append(s)
+        return res
+
 class Student(Base):
     __tablename__ = 'student'
 
@@ -39,6 +46,9 @@ class Student(Base):
         self.net_id = net_id
         self.name = name
         self.is_TA = is_TA
+
+    def as_dict(self):
+        return {'net_id': self.net_id, 'name': self.name}
 
     def __str__(self):
         return self.net_id

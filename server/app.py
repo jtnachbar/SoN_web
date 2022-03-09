@@ -30,6 +30,20 @@ cas_client = CASClient(
     server_url='https://secure.its.yale.edu/cas/'
 )
 
+engine = create_engine('sqlite:///class.db', connect_args = {"check_same_thread": False})
+
+Session = sessionmaker(bind=engine)
+sess = Session()
+
+Base.metadata.create_all(engine)
+
+amth_class = sess.query(Class).first()
+
+if not amth_class:
+    amth_class = Class()
+    sess.add(amth_class)
+    sess.commit()
+
 @app.route('/login/<ticket>', methods=['GET'])
 def login(ticket):
     response_object = {'status': 'success'}
@@ -84,37 +98,33 @@ def ping_pong():
 #    return jsonify(response_object)
 
 
-@app.route('/manage/<net_id>', methods=['PUT', 'DELETE'])
-def modify_ta(ta_id):
+@app.route('/manage/student', methods=['GET', 'PUT', 'DELETE'])
+def modify_student():
     response_object = {'status': 'success'}
     if request.method == 'PUT':
-        post_data = request.get_json()
+        post_data = request.get_json(force=True)
         new_ta = Student(
-            net_id = post_data.get('net_id')
+            net_id = post_data.get('net_id'),
+            name = post_data.get('name'),
+            is_ta = bool(post_data.get('is_ta'))
         )
+        amth_class.students.append(Student)
         sess.add(new_ta)
         sess.commit()
         response_object['message'] = 'TA added!'
     if request.method == 'DELETE':
-        remove_student(ta_id)
-        response_object['message'] = 'TA removed!'
+        post_data = request.get_json()
+        net_id = post_data.get('net_id')
+        remove_student(net_id)
+        response_object['message'] = 'Student removed!'
+    if request.method == 'GET':
+        if request.args.get('get_ta') == 'true':
+            response_object['students'] = [s.as_dict() for s in amth_class.get_TAs()]
+        else:
+            response_object['students'] = [s.as_dict() for s in amth_class.get_enrolled()]
     return jsonify(response_object)
 
 if __name__ == '__main__':
-    engine = create_engine('sqlite:///class.db', connect_args = {"check_same_thread": False})
-
-    Session = sessionmaker(bind=engine)
-    sess = Session()
-
-    Base.metadata.create_all(engine)
-
-    amth_class = sess.query(Class).first()
-    if not amth_class:
-        amth_class = Class()
-        sess.add(amth_class)
-        sess.commit()
-
-    print(amth_class.get_TAs())
 
     if amth_class.get_TAs() == []:
         head_ta = Student('jtn26', 'Jamie Nachbar', is_TA=True)
