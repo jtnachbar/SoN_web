@@ -51,7 +51,7 @@ class Student(Base):
         return {'net_id': self.net_id, 'name': self.name}
 
     def __str__(self):
-        return self.net_id
+        return self.net_id + ": " + self.name
 
 class Assignment(Base):
     __tablename__ = 'assignment'

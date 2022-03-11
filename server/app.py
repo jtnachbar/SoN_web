@@ -98,17 +98,17 @@ def ping_pong():
 #    return jsonify(response_object)
 
 
-@app.route('/manage/student', methods=['GET', 'PUT', 'DELETE'])
+@app.route('/manage/student', methods=['GET', 'POST', 'DELETE'])
 def modify_student():
     response_object = {'status': 'success'}
-    if request.method == 'PUT':
+    if request.method == 'POST':
         post_data = request.get_json(force=True)
         new_ta = Student(
-            net_id = post_data.get('net_id'),
-            name = post_data.get('name'),
-            is_ta = bool(post_data.get('is_ta'))
+            post_data.get('net_id'),
+            post_data.get('name'),
+            is_TA = bool(post_data.get('is_ta'))
         )
-        amth_class.students.append(Student)
+        amth_class.students.append(new_ta)
         sess.add(new_ta)
         sess.commit()
         response_object['message'] = 'TA added!'
