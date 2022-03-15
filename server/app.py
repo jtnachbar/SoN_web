@@ -39,6 +39,8 @@ Base.metadata.create_all(engine)
 
 amth_class = sess.query(Class).first()
 
+web_status = ''
+
 if not amth_class:
     amth_class = Class()
     sess.add(amth_class)
@@ -67,7 +69,6 @@ def login(ticket):
 
     return(jsonify(response_object))
 
-
 def remove_student(net_id):
     sql = delete(Student).where(Student.net_id == net_id)
     sess.execute(sql)
@@ -79,24 +80,16 @@ def remove_student(net_id):
 def ping_pong():
     return jsonify('pong!')
 
-#@app.route('/books', methods=['GET', 'POST'])
-#def all_books():
-#    response_object = {'status': 'success'}
-#    if request.method == 'POST':
-#        post_data = request.get_json()
-#        new_book = Books(
-#            title = post_data.get('title'),
-#            author = post_data.get('author'),
-#            read = post_data.get('read')
-#        )
-#        sess.add(new_book)
-#        sess.commit()
-#        response_object['message'] = 'Book added!'
-#    else:
-#        books = sess.query(Books).all()
-#        response_object['books'] = [book.as_dict() for book in books]
-#    return jsonify(response_object)
-
+@app.route('/status', methods=['GET', 'PUT'])
+def status():
+    global web_status
+    response_object = {'status': 'success'}
+    if request.method == 'GET':
+        response_object['status'] = web_status
+    if request.method == 'PUT':
+        put_data = request.get_json(force=True)
+        web_status = put_data.get('status')
+    return jsonify(response_object)
 
 @app.route('/manage/student', methods=['GET', 'POST', 'DELETE'])
 def modify_student():
@@ -131,5 +124,7 @@ if __name__ == '__main__':
         amth_class.students.append(head_ta)
         sess.add(head_ta)
         sess.commit()
+
+    web_status = 'offline'
 
     app.run()

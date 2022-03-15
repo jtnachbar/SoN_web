@@ -11,27 +11,43 @@
     </div>
     <br>
     <div class="row">
-      <div class="btn-group-vertical col-sm-3 </div>">
-        <button class="btn btn-primary" type="button">Edit Students</button>
+      <div class="btn-group-vertical col-sm-3" height="250px">
+        <button class="btn btn-primary" type="button"
+        @click="showComp = 'manage_class'">Edit Students</button>
         <br>
-        <button class="btn btn-primary" type="button">Edit Teaching Assistants</button>
+        <button class="btn btn-primary" type="button"
+        @click="showComp = 'manage_ta'">Edit TAs</button>
         <br>
-        <button class="btn btn-primary" type="button">Edit Assignments</button>
+        <button class="btn btn-primary" type="button"
+        @click="showComp = 'manage_assign'">Edit Assignments</button>
         <br>
-        <button class="btn btn-primary" type="button">Disable Access</button>
+        <button class="btn btn-primary" type="button"
+        @click="showComp = 'manage_access'">Disable Access</button>
       </div>
       <div class="col-md-8 </div>">
-        <ManageTA />
+        <component :is="manageComponent"></component>
       </div>
     </div>
   </div>
 </template>
 
+<style>
+  .list-group{
+      height: 250px;
+      margin-bottom: 10px;
+      overflow:scroll;
+      -webkit-overflow-scrolling: touch;
+      outline:solid;
+  }
+</style>
+
 <script>
 import Vue from 'vue';
-import axios from 'axios';
 import VueSessionStorage from 'vue-sessionstorage';
 import ManageTA from './ManageTA.vue';
+import ManageAssign from './ManageAssign.vue';
+import ManageClass from './ManageClass.vue';
+import ManageAccess from './ManageAccess.vue';
 
 Vue.use(VueSessionStorage);
 Vue.config.productionTip = false;
@@ -39,134 +55,34 @@ Vue.config.productionTip = false;
 export default {
   data() {
     return {
-      ticket: '',
-      books: [],
-      addBookForm: {
-        title: '',
-        author: '',
-        read: [],
-      },
-      message: '',
-      showMessage: false,
-      editForm: {
-        id: '',
-        title: '',
-        author: '',
-        read: [],
-      },
+      showComp: '',
     };
   },
   components: {
     ManageTA,
+    ManageAssign,
+    ManageClass,
+    ManageAccess,
+  },
+  computed: {
+    manageComponent() {
+      if (this.showComp === 'manage_assign') {
+        return 'ManageAssign';
+      } if (this.showComp === 'manage_class') {
+        return 'ManageClass';
+      } if (this.showComp === 'manage_ta') {
+        return 'ManageTA';
+      } if (this.showComp === 'manage_access') {
+        return 'ManageAccess';
+      }
+      return '';
+    },
   },
   methods: {
-    getBooks() {
-      const path = 'http://localhost:5000/books';
-      axios.get(path)
-        .then((res) => {
-          this.books = res.data.books;
-        })
-        .catch((error) => {
-          // eslint-disable-next-line
-          console.error(error);
-        });
-    },
-    addBook(payload) {
-      const path = 'http://localhost:5000/books';
-      axios.post(path, payload)
-        .then(() => {
-          this.getBooks();
-          this.message = 'Book added!';
-          this.showMessage = true;
-        })
-        .catch((error) => {
-          // eslint-disable-next-line
-          console.log(error);
-          this.getBooks();
-        });
-    },
-    initForm() {
-      this.addBookForm.title = '';
-      this.addBookForm.author = '';
-      this.addBookForm.read = [];
-      this.editForm.id = '';
-      this.editForm.title = '';
-      this.editForm.author = '';
-      this.editForm.read = [];
-    },
-    onSubmit(evt) {
-      evt.preventDefault();
-      this.$refs.addBookModal.hide();
-      let read = false;
-      if (this.addBookForm.read[0]) read = true;
-      const payload = {
-        title: this.addBookForm.title,
-        author: this.addBookForm.author,
-        read, // property shorthand
-      };
-      this.addBook(payload);
-      this.initForm();
-    },
-    onReset(evt) {
-      evt.preventDefault();
-      this.$refs.addBookModal.hide();
-      this.initForm();
-    },
-    editBook(book) {
-      this.editForm = book;
-    },
-    onSubmitUpdate(evt) {
-      evt.preventDefault();
-      this.$refs.editBookModal.hide();
-      let read = false;
-      if (this.editForm.read[0]) read = true;
-      const payload = {
-        title: this.editForm.title,
-        author: this.editForm.author,
-        read,
-      };
-      this.updateBook(payload, this.editForm.id);
-    },
-    updateBook(payload, bookID) {
-      const path = `http://localhost:5000/books/${bookID}`;
-      axios.put(path, payload)
-        .then(() => {
-          this.getBooks();
-          this.message = 'Book updated!';
-          this.showMessage = true;
-        })
-        .catch((error) => {
-          // eslint-disable-next-line
-          console.error(error);
-          this.getBooks();
-        });
-    },
-    onResetUpdate(evt) {
-      evt.preventDefault();
-      this.$refs.editBookModal.hide();
-      this.initForm();
-      this.getBooks(); // why?
-    },
-    removeBook(bookID) {
-      const path = `http://localhost:5000/books/${bookID}`;
-      axios.delete(path)
-        .then(() => {
-          this.getBooks();
-          this.message = 'Book removed!';
-          this.showMessage = true;
-        })
-        .catch((error) => {
-          // eslint-disable-next-line
-          console.error(error);
-          this.getBooks();
-        });
-    },
-    onDeleteBook(book) {
-      this.removeBook(book.id);
-    },
+
   },
   created() {
-    this.getBooks();
+    this.showComp = '';
   },
 };
 </script>

@@ -2,21 +2,28 @@
   <div class="container">
     <div class="row g-10">
         <div class="list-group list-group-flush col-md-6 ml-auto">
-            <li class="list-group-item" v-for="ta in TAs" v-bind:key="ta.name">
-              {{ ta.name }} ({{ ta.net_id }}) </li>
+            <li class="list-group-item"
+            v-for="student in filteredStudents" v-bind:key="student.name">
+              {{ student.name }} ({{ student.net_id }}) </li>
         </div>
         <div class="col-md-4">
+            <div class="search-wrapper">
+                <input type="text" v-model="search" placeholder="Search Student"/>
+            </div>
+            <br>
             <div class="btn-group-vertical" role="group">
                <button class = "btn btn-primary btn-md" type="button"
-               v-b-modal.ta-modal>Add TA</button>
+               v-b-modal.student-modal>Add Student</button>
                <button class = "btn btn-danger btn-md" type="button"
-               v-b-modal.remove-modal>Remove TA</button>
+               v-b-modal.remove-modal>Remove Student</button>
+               <button class = "btn btn-success btn-md" type="button"
+               v-b-modal.remove-modal>Add CSV</button>
             </div>
         </div>
     </div>
-    <b-modal ref="addTAModal"
-            id="ta-modal"
-            title="Add a new TA"
+    <b-modal ref="addStudentModal"
+            id="student-modal"
+            title="Add a new Student"
             hide-footer>
       <b-form @submit="onSubmit" @reset="onReset" class="w-100">
       <b-form-group id="form-name-group"
@@ -24,7 +31,7 @@
                     label-for="form-name-input">
           <b-form-input id="form-name-input"
                         type="text"
-                        v-model="addTAForm.name"
+                        v-model="addStudentForm.name"
                         required
                         placeholder="Enter Name">
           </b-form-input>
@@ -34,7 +41,7 @@
                       label-for="form-netid-input">
             <b-form-input id="form-netid-input"
                           type="text"
-                          v-model="addTAForm.net_id"
+                          v-model="addStudentForm.net_id"
                           required
                           placeholder="Enter Net-Id">
             </b-form-input>
@@ -45,9 +52,9 @@
         </b-button-group>
       </b-form>
     </b-modal>
-    <b-modal ref="remTAModal"
+    <b-modal ref="remStudentModal"
             id="remove-modal"
-            title="Remove a TA"
+            title="Remove a Student"
             hide-footer>
       <b-form @submit="onRemSubmit" @reset="onRemReset" class="w-100">
         <b-form-group id="form-rem-netid-group"
@@ -55,7 +62,7 @@
                       label-for="form-rem-netid-input">
             <b-form-input id="form-rem-netid-input"
                           type="text"
-                          v-model="remTAForm.net_id"
+                          v-model="remStudentForm.net_id"
                           required
                           placeholder="Enter Net-Id">
             </b-form-input>
@@ -80,13 +87,14 @@ Vue.config.productionTip = false;
 export default {
   data() {
     return {
-      TAs: [],
-      addTAForm: {
+      students: [],
+      search: '',
+      addStudentForm: {
         title: '',
         author: '',
         read: [],
       },
-      remTAForm: {
+      remStudentForm: {
         net_id: '',
       },
       message: '',
@@ -95,93 +103,101 @@ export default {
   },
   components: {
   },
+  computed: {
+    filteredStudents() {
+      return this.students.filter((student) => (
+        student.name.toLowerCase().indexOf(this.search.toLowerCase()) > -1
+      ));
+    },
+  },
   methods: {
-    getTAs() {
+    getStudents() {
       const path = 'http://localhost:5000/manage/student';
       axios.get(path, {
         params: {
-          get_ta: 'true',
+          get_ta: '',
+          token: 'test token',
         },
       })
         .then((res) => {
-          this.TAs = res.data.students;
-          console.log(this.TAs);
+          this.students = res.data.students;
+          console.log(this.students);
         })
         .catch((error) => {
           // eslint-disable-next-line
           console.error(error);
         });
     },
-    addTA(payload) {
+    addStudent(payload) {
       const path = 'http://localhost:5000/manage/student';
       axios.post(path, payload)
         .then(() => {
-          this.getTAs();
-          this.message = 'TA added';
+          this.getStudents();
+          this.message = 'Student added';
           this.showMessage = true;
         })
         .catch((error) => {
           // eslint-disable-next-line
           console.log(error);
-          this.getTAs();
+          this.getStudents();
         });
     },
-    remTA(payload) {
+    remStudent(payload) {
       const path = 'http://localhost:5000/manage/student';
       axios.delete(path, { data: payload })
         .then(() => {
-          this.getTAs();
-          this.message = 'TA removed';
+          this.getStudents();
+          this.message = 'Student removed';
           this.showMessage = true;
         })
         .catch((error) => {
           // eslint-disable-next-line
           console.log(error);
-          this.getTAs();
+          this.getStudents();
         });
     },
     onSubmit(evt) {
       evt.preventDefault();
-      this.$refs.addTAModal.hide();
+      this.$refs.addStudentModal.hide();
       const payload = {
-        name: this.addTAForm.name,
-        net_id: this.addTAForm.net_id,
-        is_ta: 'True',
+        name: this.addStudentForm.name,
+        net_id: this.addStudentForm.net_id,
+        is_ta: '',
         token: 'test token',
       };
-      this.addTA(payload);
+      this.addStudent(payload);
       this.initForm();
     },
     onReset(evt) {
       evt.preventDefault();
-      this.$refs.addTAModal.hide();
+      this.$refs.addStudentModal.hide();
       this.initForm();
     },
     initForm() {
-      this.addTAForm.name = '';
-      this.addTAForm.net_id = '';
+      this.addStudentForm.name = '';
+      this.addStudentForm.net_id = '';
     },
     onRemSubmit(evt) {
       evt.preventDefault();
-      this.$refs.remTAModal.hide();
+      this.$refs.remStudentModal.hide();
       const payload = {
-        net_id: this.remTAForm.net_id,
+        net_id: this.remStudentForm.net_id,
         token: 'test token',
       };
-      this.remTA(payload);
+      this.remStudent(payload);
       this.initForm();
     },
     onRemReset(evt) {
       evt.preventDefault();
-      this.$refs.remTAModal.hide();
+      this.$refs.remStudentModal.hide();
       this.initRemForm();
     },
     initRemForm() {
-      this.remTAForm.net_id = '';
+      this.remStudentForm.net_id = '';
     },
   },
   created() {
-    this.getTAs();
+    this.getStudents();
   },
 };
 </script>
