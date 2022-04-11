@@ -1,6 +1,10 @@
 <template>
   <div class="container">
     <div class="row g-10">
+      <button @click="$parent.showComp = 'manage_home';"
+          class="btn btn-secondary float-top float-left">
+          &laquo; Back
+        </button>
         <div class="list-group list-group-flush col-md-6 ml-auto">
             <li class="list-group-item" v-for="ta in TAs" v-bind:key="ta.name">
               {{ ta.name }} ({{ ta.net_id }}) </li>

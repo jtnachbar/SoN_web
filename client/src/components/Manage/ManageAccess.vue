@@ -1,8 +1,14 @@
 <template>
   <div>
     <div class="container">
-      <div class="col-md-10">
+      <div class='row'>
         <h1> The website is {{ web_status }} </h1>
+      </div>
+      <div class='row'>
+        <button @click="$parent.showComp = 'manage_home';"
+          class="btn btn-secondary mr-2">
+          &laquo; Back
+        </button>
         <button v-if = "web_status === 'offline'" class = "btn btn-success"
         @click="updateStatus( {status: 'online'})"> Bring site up </button>
         <button v-if = "web_status === 'online'" class = "btn btn-danger"

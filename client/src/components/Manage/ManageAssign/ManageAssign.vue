@@ -1,19 +1,18 @@
 <template>
   <div>
     <div v-show="showComponent === 'default'" class='container'>
-      <div class='row align-items-start'>
-        <h3 class='col-md' v-if="selected_assign.name === ''"> Assignment </h3>
-        <h3 v-else class='col-4 mr-3'> Assignment: {{ this.selected_assign.name}} </h3>
-        <h3 class='col-4' v-if="selected_question.name != ''">
-          Question: {{ this.selected_question.name}}
-        </h3>
+      <div class='row'>
         <button @click="$parent.showComp = 'manage_home';"
-          class="col- btn btn-secondary">
+          class="mr-4 mb-2 btn btn-secondary">
           &laquo; Back
         </button>
+        <h3 class='mr-2'> <b> Assignment: </b> {{ this.selected_assign.name}} </h3>
+        <h3 v-if="selected_question.name != ''" >
+          <b> Question: </b> {{ this.selected_question.name}}
+        </h3>
       </div>
       <div class='row'>
-        <b-dropdown id="assign-drop" text="Select Assignment" class="m-md-2">
+        <b-dropdown id="assign-drop" text="Select Assignment" class="mr-2 my-2">
         <b-dropdown-item v-for="assign in assignments" v-bind:key="assign.name"
         @click="getSelectedAssignment(assign.name); selected_question = { name: '', format: '' };
         getQuestions(assign.name);">
@@ -22,7 +21,7 @@
         <b-dropdown-item v-b-modal.add-assign-modal> Add Assignment</b-dropdown-item>
         <b-dropdown-item v-b-modal.rem-assign-modal> Delete Assignment</b-dropdown-item>
         </b-dropdown>
-        <div class='btn-group btn-group m-md-2' v-if="selected_assign.name != ''">
+        <div class='btn-group btn-group m-2' v-if="selected_assign.name != ''">
           <button type="button" :class=
           "selected_assign.published ? 'btn btn-success' : 'btn btn-danger'"
           @click="toggleAssignPublished();">
@@ -36,7 +35,7 @@
       </div>
       <div class='row'>
         <b-dropdown v-if="selected_assign.name != ''" id="question-drop" text="Select Question"
-        class="m-md-2">
+        class="mr-2 my-2">
         <b-dropdown-item v-for="question in questions" v-bind:key="question.name"
         @click="getSelectedQuestion(question.name)">
           {{ question.name }} </b-dropdown-item>
@@ -46,15 +45,17 @@
         </b-dropdown>
         <div class='btn-group btn-group m-md-2' v-if="selected_question.name != ''">
           <button type="button"
-          @click="getSelectedQuestion(selected_question.name); showComponent = 'format'"
+          @click="showComponent = 'format'"
             class="btn btn-secondary">Format
           </button>
-          <button type="button" class="btn btn-secondary">Params</button>
+          <button type="button" class="btn btn-secondary"
+          @click="showComponent = 'params'">
+          Params</button>
         </div>
       </div>
       <div class='row'>
         <b-dropdown v-if="selected_question.name != ''" id="part-drop" text="Select Part"
-        class="m-md-2">
+        class="mr-2 my-2">
         <b-dropdown-item v-for="part in parts" v-bind:key="part.part_num"
         @click="selected_part=part.part_num">
           {{ part.part_num }} </b-dropdown-item>
@@ -62,14 +63,17 @@
         <b-dropdown-item @click="addPart()"> Add Part</b-dropdown-item>
         <b-dropdown-item v-b-modal.rem-part-modal> Delete Part</b-dropdown-item>
         </b-dropdown>
-        <div class='btn-group btn-group m-md-2 float-right' v-if="selected_part != ''">
+        <div class='btn-group btn-group m-2 float-right' v-if="selected_part != ''">
           <button type="button" class="btn btn-secondary">Direction</button>
           <button type="button" class="btn btn-secondary">Grading Rule</button>
         </div>
       </div>
     </div>
-    <div v-if="showComponent==='format'" key="key">
+    <div v-if="showComponent==='format'" key="key1">
       <ManageAssignFormat />
+    </div>
+    <div v-if="showComponent==='params'" key="key2">
+      <ManageAssignParams />
     </div>
     <b-modal ref="addAssignModal"
             id="add-assign-modal"
@@ -165,6 +169,7 @@ import Vue from 'vue';
 import VueSessionStorage from 'vue-sessionstorage';
 import axios from 'axios';
 import ManageAssignFormat from './ManageAssignFormat.vue';
+import ManageAssignParams from './ManageAssignParams.vue';
 
 Vue.use(VueSessionStorage);
 Vue.config.productionTip = false;
@@ -195,6 +200,7 @@ export default {
   },
   components: {
     ManageAssignFormat,
+    ManageAssignParams,
   },
   computed: {
     console: () => console,

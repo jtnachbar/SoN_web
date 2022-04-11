@@ -1,14 +1,15 @@
 from flask import Flask, jsonify, request, session, redirect, url_for
 from flask_cors import CORS
 from itsdangerous import json
-from sqlalchemy import delete, create_engine, Column, Integer, String, Boolean
+from sqlalchemy import delete, create_engine
 from cas import CASClient
 from cryptography.fernet import Fernet
+import random
 
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
-from Class import Class, Student, Assignment, Question, QuestionPart, Param, Base
+from Class import Class, Student, Assignment, Question, QuestionPart, Param, ParamList, Base
 
 # configuration
 DEBUG = True
@@ -164,6 +165,7 @@ def individual_assign(assign_name=None):
                 else:
                     response_object['status'] = 'failure'
                     response_object['message'] = 'No param status specified'
+        sess.commit()
     return jsonify(response_object)
 
 @app.route('/questions/<assign_name>', methods=['GET', 'POST', 'DELETE'])
@@ -179,7 +181,6 @@ def question(assign_name=None, question_name=None):
     if request.method == 'GET':
         assign = [a for a in amth_class.assignments if a.name == assign_name][0]
         response_object['question'] = [q.as_dict() for q in assign.questions if q.name==question_name][0]
-        print(response_object['question']['format'])
     else:
         assign = [a for a in amth_class.assignments if a.name == assign_name][0]
         if assign == None:
@@ -200,10 +201,36 @@ def question(assign_name=None, question_name=None):
             post_data = request.get_json()
             assign = [a for a in amth_class.assignments if a.name == assign_name][0]
             question = [q for q in assign.questions if q.name==question_name][0]
-            for param in ("","format"):
+            for param in ("format", "param_func"):
                 if param in post_data['params']:
                     setattr(question, param, post_data['params'][param])
+                    if param == 'param_func':
+                        add_params(question, post_data['params']['param_func'])
+                sess.commit()
             print(question.as_dict())
+    return jsonify(response_object)
+
+params = ''
+def add_params(question, param_func):
+    question.params = []
+    for student in amth_class.students:
+        p_list = ParamList(student.net_id)
+        param_func = "global params\n" + param_func
+        exec(param_func)
+        for (i, p) in enumerate(params):
+            p_list.params.append(Param(i, p))
+        question.params.append(p_list)
+        print(question.params[0].params)
+
+@app.route('/sampleparamfunc', methods=['PUT'])
+def sample_param_func():
+    response_object = {'status': 'success', 'param_sample': ''}
+    post_data = request.get_json()
+    param_func = post_data['params']['param_func']
+    param_func = "global params\n" + param_func
+    # Scary, I know. Only trusted users can access this endpoint.
+    exec(param_func)
+    response_object['param_sample'] = params
     return jsonify(response_object)
 
 # Fix the rest of this!
