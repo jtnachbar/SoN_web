@@ -1,10 +1,15 @@
 <template>
+  <div>
     <div class="container">
       <div class="col-md-10">
         <h1> The website is {{ web_status }} </h1>
-        <h2> Bring not {{ web_status }} </h2>
+        <button v-if = "web_status === 'offline'" class = "btn btn-success"
+        @click="updateStatus( {status: 'online'})"> Bring site up </button>
+        <button v-if = "web_status === 'online'" class = "btn btn-danger"
+        @click="updateStatus( {status: 'offline'})"> Take site down </button>
       </div>
     </div>
+  </div>
 </template>
 
 <script>

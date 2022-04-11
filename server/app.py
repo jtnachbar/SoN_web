@@ -8,7 +8,7 @@ from cryptography.fernet import Fernet
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
-from Class import Class, Student, Assignment, Question, Answer, Param, Base
+from Class import Class, Student, Assignment, Question, QuestionPart, Param, Base
 
 # configuration
 DEBUG = True
@@ -75,10 +75,17 @@ def remove_student(net_id):
     sess.commit()
     return False
 
-# sanity check route
-@app.route('/ping', methods=['GET'])
-def ping_pong():
-    return jsonify('pong!')
+def remove_assignment(name):
+    sql = delete(Assignment).where(Assignment.name == name)
+    sess.execute(sql)
+    sess.commit()
+    return False
+    
+def remove_question(assign_name, question_name):
+    sql = delete(Question).where(Question.name == question_name).where(Question.assignment_name == assign_name)
+    sess.execute(sql)
+    sess.commit()
+    return False
 
 @app.route('/status', methods=['GET', 'PUT'])
 def status():
@@ -117,6 +124,127 @@ def modify_student():
             response_object['students'] = [s.as_dict() for s in amth_class.get_enrolled()]
     return jsonify(response_object)
 
+@app.route('/assigns', methods=['GET'])
+def all_assign():
+    response_object = {'status': 'success'}
+    response_object['assignments'] = [a.as_dict() for a in amth_class.assignments]
+    return jsonify(response_object)
+
+@app.route('/assign/<assign_name>', methods=['GET', 'POST', 'DELETE', 'PATCH'])
+def individual_assign(assign_name=None):
+    response_object = {'status': 'success'}
+    if request.method == 'POST':
+        for a in amth_class.assignments:
+            if assign_name == a.name:
+                response_object['status'] = 'failure'
+                response_object['message'] = 'Assignment already exists!'
+                return jsonify(response_object)
+        new_assign = Assignment(
+            name=assign_name,
+        )
+        amth_class.assignments.append(new_assign)
+        sess.add(new_assign)
+        sess.commit()
+        response_object['message'] = 'Assignment added!'
+    if request.method == 'DELETE':
+        remove_assignment(assign_name)
+        response_object['message'] = 'Assignment removed!'
+    if request.method == 'GET':
+        assign = [a for a in amth_class.assignments if a.name == assign_name][0]
+        response_object['assignment'] = assign.as_dict()
+    if request.method == 'PATCH':
+        post_data = request.get_json()
+        assign = [a for a in amth_class.assignments if a.name == assign_name][0]
+        for param in ('active', 'published'):
+            if param in post_data['params']:
+                if post_data['params'][param] == True:
+                    setattr(assign, param, True)
+                elif post_data['params'][param] == False:
+                    setattr(assign, param, False)
+                else:
+                    response_object['status'] = 'failure'
+                    response_object['message'] = 'No param status specified'
+    return jsonify(response_object)
+
+@app.route('/questions/<assign_name>', methods=['GET', 'POST', 'DELETE'])
+def get_questions(assign_name=None):
+    response_object = {'status': 'success'}
+    assign = [a for a in amth_class.assignments if a.name == assign_name][0]
+    response_object['questions'] = [q.as_dict() for q in assign.questions]
+    return jsonify(response_object)
+
+@app.route('/question/<assign_name>/<question_name>', methods=['GET', 'POST', 'PATCH', 'DELETE'])
+def question(assign_name=None, question_name=None):
+    response_object = {'status': 'success'}
+    if request.method == 'GET':
+        assign = [a for a in amth_class.assignments if a.name == assign_name][0]
+        response_object['question'] = [q.as_dict() for q in assign.questions if q.name==question_name][0]
+        print(response_object['question']['format'])
+    else:
+        assign = [a for a in amth_class.assignments if a.name == assign_name][0]
+        if assign == None:
+            response_object['status'] = 'failure'
+            return jsonify(response_object)
+        if request.method == 'POST':
+            new_question = Question(
+                name=question_name,
+            )
+            assign.questions.append(new_question)
+            sess.add(new_question)
+            sess.commit()
+            response_object['message'] = 'Question added!'
+        if request.method == 'DELETE':
+            remove_question(assign_name, question_name)
+            response_object['message'] = 'Assignment removed!'
+        if request.method == 'PATCH':
+            post_data = request.get_json()
+            assign = [a for a in amth_class.assignments if a.name == assign_name][0]
+            question = [q for q in assign.questions if q.name==question_name][0]
+            for param in ("","format"):
+                if param in post_data['params']:
+                    setattr(question, param, post_data['params'][param])
+            print(question.as_dict())
+    return jsonify(response_object)
+
+# Fix the rest of this!
+@app.route('/parts', methods=['GET', 'POST', 'DELETE'])
+def part():
+    response_object = {'status': 'success'}
+    if request.method == 'GET':
+        post_data = request.args
+        assign = None
+        for a in amth_class.assignments:
+            if post_data.get('assign_name') == a.name:
+                assign = a
+        # Find the question as well
+        print(assign)
+        response_object['parts'] = [p.as_dict() for p in assign.questions.question_parts]
+        print(response_object)
+    else:
+        request_data = request.get_json()
+        assign = None
+        for a in amth_class.assignments:
+            if request_data.get('assign_name') == a.name:
+                assign = a
+        if assign == None:
+            response_object['status'] = 'failure'
+            return jsonify(response_object)
+        if request.method == 'POST':
+            post_data = request.get_json(force=True)
+            new_question = Question(
+                name=post_data.get('question_name'),
+            )
+            assign.questions.append(new_question)
+            print(assign.questions)
+            sess.add(new_question)
+            sess.commit()
+            response_object['message'] = 'Question added!'
+        if request.method == 'DELETE':
+            post_data = request.get_json()
+            remove_question(post_data['assign_name'], post_data['question_name'])
+            response_object['message'] = 'Assignment removed!'
+    return jsonify(response_object)
+
 if __name__ == '__main__':
 
     if amth_class.get_TAs() == []:
@@ -125,6 +253,6 @@ if __name__ == '__main__':
         sess.add(head_ta)
         sess.commit()
 
-    web_status = 'offline'
+    web_status = 'online'
 
     app.run()

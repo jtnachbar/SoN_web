@@ -1,5 +1,5 @@
 <template>
-  <div class="container-lg border-top border-bottom rounded py-5">
+  <div class="container-lg border-top border-bottom rounded py-2">
     <button
         type="button"
         class="btn btn-success btn-md float-right"
@@ -11,7 +11,8 @@
     </div>
     <br>
     <div class="row">
-      <div class="btn-group-vertical col-sm-3" height="250px">
+      <div v-show="showComp==='manage_home'"
+      class="btn-group-vertical col-sm-3 left-button-group" height="250px">
         <button class="btn btn-primary" type="button"
         @click="showComp = 'manage_class'">Edit Students</button>
         <br>
@@ -25,7 +26,18 @@
         @click="showComp = 'manage_access'">Disable Access</button>
       </div>
       <div class="col-md-8 </div>">
-        <component :is="manageComponent"></component>
+        <div v-show="this.showComp==='manage_class'">
+          <ManageClass />
+        </div>
+        <div v-show="this.showComp==='manage_access'">
+          <ManageAccess />
+        </div>
+        <div v-show="this.showComp==='manage_assign'">
+          <ManageAssign />
+        </div>
+        <div v-show="this.showComp==='manage_ta'">
+          <ManageTA />
+        </div>
       </div>
     </div>
   </div>
@@ -39,13 +51,16 @@
       -webkit-overflow-scrolling: touch;
       outline:solid;
   }
+  .left-button-group{
+    height: 250px;
+  }
 </style>
 
 <script>
 import Vue from 'vue';
 import VueSessionStorage from 'vue-sessionstorage';
 import ManageTA from './ManageTA.vue';
-import ManageAssign from './ManageAssign.vue';
+import ManageAssign from './ManageAssign/ManageAssign.vue';
 import ManageClass from './ManageClass.vue';
 import ManageAccess from './ManageAccess.vue';
 
@@ -67,13 +82,15 @@ export default {
   computed: {
     manageComponent() {
       if (this.showComp === 'manage_assign') {
-        return 'ManageAssign';
+        return 'ManageAssignDefault';
       } if (this.showComp === 'manage_class') {
         return 'ManageClass';
       } if (this.showComp === 'manage_ta') {
         return 'ManageTA';
       } if (this.showComp === 'manage_access') {
         return 'ManageAccess';
+      } if (this.showComp === 'manage_home') {
+        return 'ManageHome';
       }
       return '';
     },
@@ -82,7 +99,7 @@ export default {
 
   },
   created() {
-    this.showComp = '';
+    this.showComp = 'manage_home';
   },
 };
 </script>

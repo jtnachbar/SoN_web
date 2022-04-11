@@ -1,6 +1,10 @@
 <template>
   <div class="container">
     <div class="row g-10">
+        <button @click="$parent.showComp = 'manage_home';"
+          class="btn btn-secondary float-top float-left">
+          &laquo; Back
+        </button>
         <div class="list-group list-group-flush col-md-6 ml-auto">
             <li class="list-group-item"
             v-for="student in filteredStudents" v-bind:key="student.name">

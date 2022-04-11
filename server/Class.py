@@ -57,39 +57,73 @@ class Assignment(Base):
     __tablename__ = 'assignment'
 
     id = Column(Integer, primary_key=True)
-    html = Column(String)
+    name = Column(String)
     class_id = Column(Integer, ForeignKey('class.id'))
     questions = relationship('Question')
+    published = Column(Boolean)
+    active = Column(Boolean)
 
-    def __init__(self, html, questions):
-        self.html = html
-        self.questions = questions
+    def __init__(self, name):
+        self.questions = []
+        self.name = name
+        self.published = False
+        self.active = False
+
+    def as_dict(self):
+        return {'name': self.name, 'published': self.published, 'active': self.active}
 
 class Question(Base):
     __tablename__ = 'question'
 
-    net_id = Column(String, primary_key=True)
-    params = relationship('Param')
-    answers = relationship('Answer')
-    assignment_id = Column(Integer, ForeignKey('assignment.id'))
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    params = relationship('ParamList')
+    format = Column(String)
+    assignment_name = Column(Integer, ForeignKey('assignment.name'))
+    question_parts = relationship('QuestionPart')
 
-    def __init__(self, net_id, param_list, answer_list):
-        self.net_id = net_id
-        self.params = param_list
-        self.answers = answer_list
+    def __init__(self, name):
+        self.name = name
+        self.format = ''
 
-class Answer(Base):
-    __tablename__ = 'answer'
+    def as_dict(self):
+        return {'name': self.name, 'format': self.format}
+
+class QuestionPart(Base):
+    __tablename__ = 'question_part'
 
     id = Column(Integer, primary_key=True)
-    response = Column(String)
-    answer = Column(String)
+    part_num = Column(Integer)
+    direction = Column(String)
     grading_rule = Column(String)
-    net_id = Column(Integer, ForeignKey('question.net_id'))
+    question_id = Column(Integer, ForeignKey('question.id'))
+    student_answers = relationship('StudentAnswer')
 
-    def __init__(self, res, ans):
-        self.response = res
-        self.answer = ans
+    def __init__(self, direction):
+        self.direction = direction
+
+    def as_dict(self):
+        return {'part_num': self.part_num}
+
+class StudentAnswer(Base):
+    __tablename__ = 'student_answer'
+    
+    id = Column(Integer, primary_key=True)
+    net_id = Column(String)
+    response = Column(String)
+    correct = Column(Boolean)
+    question_part_id = Column(Integer, ForeignKey('question_part.id'))
+
+    def __init__(self, net_id):
+        self.net_id = net_id
+
+class ParamList(Base):
+    __tablename__ = 'param_list'
+    
+    id = Column(Integer, primary_key=True)
+    net_id = Column(String)
+    params = relationship('Param')
+    question_id = Column(Integer, ForeignKey('question.id'))
 
 class Param(Base):
     __tablename__ = 'param'
@@ -97,7 +131,7 @@ class Param(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     param = Column(String)
-    net_id = Column(Integer, ForeignKey('question.net_id'))
+    param_list_id = Column(Integer, ForeignKey('param_list.id'))
 
     def __init__(self, name, param):
         self.name = name
