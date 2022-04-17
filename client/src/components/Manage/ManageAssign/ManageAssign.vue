@@ -7,15 +7,18 @@
           &laquo; Back
         </button>
         <h3 class='mr-2'> <b> Assignment: </b> {{ this.selected_assign.name}} </h3>
-        <h3 v-if="selected_question.name != ''" >
+        <h3 class='mr-2' v-if="selected_question.name != ''" >
           <b> Question: </b> {{ this.selected_question.name}}
+        </h3>
+        <h3 v-if="selected_part.part_num != ''" >
+          <b> Part: </b> {{ this.selected_part.part_num}}
         </h3>
       </div>
       <div class='row'>
         <b-dropdown id="assign-drop" text="Select Assignment" class="mr-2 my-2">
         <b-dropdown-item v-for="assign in assignments" v-bind:key="assign.name"
-        @click="getSelectedAssignment(assign.name); selected_question = { name: '', format: '' };
-        getQuestions(assign.name);">
+        @click="getSelectedAssignment(assign.name); selected_assign.name = assign.name;
+        selected_question = { name: '', format: '' }; getQuestions();">
           {{ assign.name }} </b-dropdown-item>
         <b-dropdown-divider></b-dropdown-divider>
         <b-dropdown-item v-b-modal.add-assign-modal> Add Assignment</b-dropdown-item>
@@ -37,7 +40,8 @@
         <b-dropdown v-if="selected_assign.name != ''" id="question-drop" text="Select Question"
         class="mr-2 my-2">
         <b-dropdown-item v-for="question in questions" v-bind:key="question.name"
-        @click="getSelectedQuestion(question.name)">
+        @click="getSelectedQuestion(question.name); selected_question.name = question.name;
+        getParts();">
           {{ question.name }} </b-dropdown-item>
         <b-dropdown-divider></b-dropdown-divider>
         <b-dropdown-item v-b-modal.add-question-modal> Add Question</b-dropdown-item>
@@ -55,17 +59,33 @@
       </div>
       <div class='row'>
         <b-dropdown v-if="selected_question.name != ''" id="part-drop" text="Select Part"
-        class="mr-2 my-2">
+        class="mr-4 my-2">
         <b-dropdown-item v-for="part in parts" v-bind:key="part.part_num"
-        @click="selected_part=part.part_num">
+        @click="getSelectedPart(part.part_num)">
           {{ part.part_num }} </b-dropdown-item>
         <b-dropdown-divider></b-dropdown-divider>
-        <b-dropdown-item @click="addPart()"> Add Part</b-dropdown-item>
-        <b-dropdown-item v-b-modal.rem-part-modal> Delete Part</b-dropdown-item>
+        <b-dropdown-item @click="addPart();"> Add Part</b-dropdown-item>
         </b-dropdown>
-        <div class='btn-group btn-group m-2 float-right' v-if="selected_part != ''">
-          <button type="button" class="btn btn-secondary">Direction</button>
-          <button type="button" class="btn btn-secondary">Grading Rule</button>
+        <div class='row' v-if="selected_part.part_num != ''">
+          <div class='btn-group m-2 float-right'>
+            <button type="button"
+            @click="showComponent = 'direction'"
+            class="btn btn-secondary">Direction</button>
+            <button type="button"
+            @click="showComponent = 'rule'"
+            class="btn btn-secondary">Grading</button>
+          </div>
+          <b-dropdown v-if="selected_question.name != ''" id="part-drop" text="Part Order"
+          class="my-2">
+          <b-dropdown-item v-for="part in parts" v-bind:key="part.part_num"
+          @click="setPartOrder(part.part_num); getSelectedPart(part.part_num); getParts()">
+            {{ part.part_num }} </b-dropdown-item>
+          </b-dropdown>
+          <div class='btn-group m-2 float-right'>
+            <button type="button"
+              @click="remPart()"
+              class="btn btn-danger"> Delete Part </button>
+          </div>
         </div>
       </div>
     </div>
@@ -74,6 +94,12 @@
     </div>
     <div v-if="showComponent==='params'" key="key2">
       <ManageAssignParams />
+    </div>
+    <div v-if="showComponent==='direction'" key="key2">
+      <ManageAssignDirections />
+    </div>
+    <div v-if="showComponent==='rule'" key="key2">
+      <ManageAssignRule />
     </div>
     <b-modal ref="addAssignModal"
             id="add-assign-modal"
@@ -170,6 +196,8 @@ import VueSessionStorage from 'vue-sessionstorage';
 import axios from 'axios';
 import ManageAssignFormat from './ManageAssignFormat.vue';
 import ManageAssignParams from './ManageAssignParams.vue';
+import ManageAssignDirections from './ManageAssignDirections.vue';
+import ManageAssignRule from './ManageAssignRule.vue';
 
 Vue.use(VueSessionStorage);
 Vue.config.productionTip = false;
@@ -189,10 +217,10 @@ export default {
       remQuestionForm: {
         name: '',
       },
-      assignments: [],
       selected_assign: { name: '', published: '', active: '' },
       selected_question: { name: '', format: '' },
-      selected_part: '',
+      selected_part: { part_num: '', direction: '', grading_rule: '' },
+      assignments: [],
       questions: [],
       parts: [],
       showComponent: 'default',
@@ -201,6 +229,8 @@ export default {
   components: {
     ManageAssignFormat,
     ManageAssignParams,
+    ManageAssignDirections,
+    ManageAssignRule,
   },
   computed: {
     console: () => console,
@@ -223,7 +253,7 @@ export default {
         .then(() => {
           this.getAssignments();
           this.getSelectedAssignment(assignName);
-          this.getQuestions(this.selected_assign.name);
+          this.getQuestions();
           this.message = 'Assignment added';
           this.showMessage = true;
         })
@@ -271,7 +301,7 @@ export default {
       const path = `http://localhost:5000/question/${assignName}/${questionName}`;
       axios.delete(path, { data: payload })
         .then(() => {
-          this.getQuestions(this.selected_assign.name);
+          this.getQuestions();
           this.message = 'Question removed';
           this.showMessage = true;
           this.selected_question = '';
@@ -279,7 +309,7 @@ export default {
         .catch((error) => {
           // eslint-disable-next-line
           console.log(error);
-          this.getQuestions(this.selected_assign.name);
+          this.getQuestions();
         });
     },
     getAssignments() {
@@ -291,7 +321,6 @@ export default {
       })
         .then((res) => {
           this.assignments = res.data.assignments;
-          console.log(this.assignments);
         })
         .catch((error) => {
           // eslint-disable-next-line
@@ -300,7 +329,6 @@ export default {
     },
     getSelectedAssignment(assignmentName) {
       const path = `http://localhost:5000/assign/${assignmentName}`;
-      console.log(assignmentName);
       axios.get(path, {
         params: {
           token: 'test token',
@@ -352,7 +380,7 @@ export default {
       const path = `http://localhost:5000/question/${assignName}/${questionName}`;
       axios.post(path, payload)
         .then(() => {
-          this.getQuestions(this.selected_assign.name);
+          this.getQuestions();
           this.message = 'Question added';
           this.showMessage = true;
           this.getSelectedQuestion(questionName);
@@ -360,15 +388,14 @@ export default {
         .catch((error) => {
           // eslint-disable-next-line
           console.log(error);
-          this.getQuestions(this.selected_assign.name);
+          this.getQuestions();
         });
     },
-    getQuestions(assignName) {
-      const path = `http://localhost:5000/questions/${assignName}`;
+    getQuestions() {
+      const path = `http://localhost:5000/questions/${this.selected_assign.name}`;
       axios.get(path, {
         params: {
           token: 'test token',
-          assignName: this.selected_assign.name,
         },
       })
         .then((res) => {
@@ -396,10 +423,89 @@ export default {
         });
     },
     getParts() {
-
+      const path = `http://localhost:5000/parts/${this.selected_assign.name}/${this.selected_question.name}`;
+      axios.get(path, {
+        params: {
+          token: 'test token',
+        },
+      })
+        .then((res) => {
+          this.parts = res.data.parts;
+          console.log(this.parts);
+        })
+        .catch((error) => {
+          // eslint-disable-next-line
+          console.error(error);
+        });
+    },
+    getSelectedPart(partNum) {
+      const path = `http://localhost:5000/part/${this.selected_assign.name}/${this.selected_question.name}/${partNum}`;
+      axios.get(path, {
+        params: {
+          token: 'test token',
+        },
+      })
+        .then((res) => {
+          this.selected_part = res.data.part;
+        })
+        .catch((error) => {
+          // eslint-disable-next-line
+          console.error(error);
+        });
     },
     addPart() {
-
+      const path = `http://localhost:5000/part/${this.selected_assign.name}/${this.selected_question.name}/0`;
+      axios.post(path, {
+        params: {
+          token: 'test token',
+        },
+      })
+        .then(() => {
+          this.message = 'Part added';
+          this.showMessage = true;
+          this.getParts();
+        })
+        .catch((error) => {
+          // eslint-disable-next-line
+          console.log(error);
+        });
+      this.getParts();
+    },
+    remPart() {
+      const path = `http://localhost:5000/part/${this.selected_assign.name}/${this.selected_question.name}/${this.selected_part.part_num}`;
+      axios.delete(path, {
+        params: {
+          token: 'test token',
+        },
+      })
+        .then(() => {
+          this.message = 'Part deleted';
+          this.showMessage = true;
+          this.selected_part = { part_num: '', direction: '', grading_rule: '' };
+          this.getParts();
+        })
+        .catch((error) => {
+          // eslint-disable-next-line
+          console.log(error);
+        });
+    },
+    setPartOrder(partOrder) {
+      const path = `http://localhost:5000/part/${this.selected_assign.name}/${this.selected_question.name}/${this.selected_part.part_num}`;
+      axios.patch(path, {
+        params: {
+          token: 'test token',
+          part_order: partOrder,
+        },
+      })
+        .then(() => {
+          this.message = 'Part changed';
+          this.showMessage = true;
+          this.getParts();
+        })
+        .catch((error) => {
+          // eslint-disable-next-line
+          console.log(error);
+        });
     },
   },
   created() {

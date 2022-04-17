@@ -75,8 +75,7 @@ class Assignment(Base):
 class Question(Base):
     __tablename__ = 'question'
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
+    name = Column(String, primary_key=True)
     params = relationship('ParamList')
     param_func = Column(String)
     format = Column(String)
@@ -100,14 +99,14 @@ class QuestionPart(Base):
     part_num = Column(Integer)
     direction = Column(String)
     grading_rule = Column(String)
-    question_id = Column(Integer, ForeignKey('question.id'))
+    question_name = Column(Integer, ForeignKey('question.name'))
     student_answers = relationship('StudentAnswer')
 
-    def __init__(self, direction):
-        self.direction = direction
+    def __init__(self):
+        self.part_num = -1
 
     def as_dict(self):
-        return {'part_num': self.part_num}
+        return {'part_num': self.part_num, 'direction': self.direction, 'grading_rule': self.grading_rule}
 
 class StudentAnswer(Base):
     __tablename__ = 'student_answer'
@@ -127,7 +126,7 @@ class ParamList(Base):
     id = Column(Integer, primary_key=True)
     net_id = Column(String)
     params = relationship('Param')
-    question_id = Column(Integer, ForeignKey('question.id'))
+    question_name = Column(Integer, ForeignKey('question.name'))
 
     def __init__(self, net_id):
         self.net_id = net_id

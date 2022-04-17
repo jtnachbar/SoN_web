@@ -88,6 +88,12 @@ def remove_question(assign_name, question_name):
     sess.commit()
     return False
 
+def remove_part(question_name, part_num):
+    sql = delete(QuestionPart).where(QuestionPart.question_name == question_name).where(QuestionPart.part_num == part_num)
+    sess.execute(sql)
+    sess.commit()
+    return False
+
 @app.route('/status', methods=['GET', 'PUT'])
 def status():
     global web_status
@@ -126,13 +132,13 @@ def modify_student():
     return jsonify(response_object)
 
 @app.route('/assigns', methods=['GET'])
-def all_assign():
+def get_assigns():
     response_object = {'status': 'success'}
     response_object['assignments'] = [a.as_dict() for a in amth_class.assignments]
     return jsonify(response_object)
 
 @app.route('/assign/<assign_name>', methods=['GET', 'POST', 'DELETE', 'PATCH'])
-def individual_assign(assign_name=None):
+def assign(assign_name=None):
     response_object = {'status': 'success'}
     if request.method == 'POST':
         for a in amth_class.assignments:
@@ -186,6 +192,12 @@ def question(assign_name=None, question_name=None):
         if assign == None:
             response_object['status'] = 'failure'
             return jsonify(response_object)
+        for a in amth_class.assignments:
+            for q in a.questions:
+                if q.name == question_name:
+                    response_object['status'] = 'failure'
+                    response_object['message'] = 'Assignment already exists!'
+                    return jsonify(response_object)
         if request.method == 'POST':
             new_question = Question(
                 name=question_name,
@@ -233,43 +245,71 @@ def sample_param_func():
     response_object['param_sample'] = params
     return jsonify(response_object)
 
-# Fix the rest of this!
-@app.route('/parts', methods=['GET', 'POST', 'DELETE'])
-def part():
+@app.route('/parts/<assign_name>/<question_name>', methods=['GET'])
+def get_parts(assign_name, question_name):
     response_object = {'status': 'success'}
+    assign = [a for a in amth_class.assignments if a.name == assign_name][0]
+    question = [q for q in assign.questions if q.name==question_name][0]
+    question.question_parts.sort(key=lambda x: x.part_num)
+    response_object['parts'] = [p.as_dict() for p in question.question_parts]
+    print(response_object)
+    return jsonify(response_object)
+
+@app.route('/part/<assign_name>/<question_name>/<part_num>', methods=['GET', 'POST', 'PATCH', 'DELETE'])
+def part(assign_name, question_name, part_num):
+    response_object = {'status': 'success'}
+    assign = [a for a in amth_class.assignments if a.name == assign_name][0]
+    if assign == None:
+        response_object['status'] = 'failure'
+        return jsonify(response_object)
+    question = [q for q in assign.questions if q.name==question_name][0]
+    if question == None:
+        response_object['status'] = 'failure'
+        return jsonify(response_object)
     if request.method == 'GET':
-        post_data = request.args
-        assign = None
-        for a in amth_class.assignments:
-            if post_data.get('assign_name') == a.name:
-                assign = a
-        # Find the question as well
-        print(assign)
-        response_object['parts'] = [p.as_dict() for p in assign.questions.question_parts]
-        print(response_object)
-    else:
-        request_data = request.get_json()
-        assign = None
-        for a in amth_class.assignments:
-            if request_data.get('assign_name') == a.name:
-                assign = a
-        if assign == None:
+        print([p.part_num for p in question.question_parts])
+        response_object['part'] = [p.as_dict() for p in question.question_parts if p.part_num == int(part_num)][0]
+    elif request.method == 'POST':
+        new_part = QuestionPart()
+        # Give it the last number by default
+        if question.question_parts == []:
+            largest_num = 1
+        else:
+            largest_num = max([int(p.part_num) for p in question.question_parts]) + 1
+        new_part.part_num = largest_num
+        print(new_part)
+        question.question_parts.append(new_part)
+        sess.add(new_part)
+        sess.commit()
+        response_object['message'] = 'Part added!'
+    elif request.method == 'DELETE':
+        remove_part(question_name, part_num)
+        for part in question.question_parts:
+            if part.part_num > int(part_num):
+                part.part_num -= 1
+        response_object['message'] = 'Part removed!'
+    elif request.method == 'PATCH':
+        post_data = request.get_json()
+        part = [p for p in question.question_parts if p.part_num == int(part_num)][0]
+        if part == None:
             response_object['status'] = 'failure'
             return jsonify(response_object)
-        if request.method == 'POST':
-            post_data = request.get_json(force=True)
-            new_question = Question(
-                name=post_data.get('question_name'),
-            )
-            assign.questions.append(new_question)
-            print(assign.questions)
-            sess.add(new_question)
-            sess.commit()
-            response_object['message'] = 'Question added!'
-        if request.method == 'DELETE':
-            post_data = request.get_json()
-            remove_question(post_data['assign_name'], post_data['question_name'])
-            response_object['message'] = 'Assignment removed!'
+        if 'part_order' in post_data['params']:
+            new_pos = int(post_data['params']['part_order'])
+            if part.part_num < new_pos:
+                for p in question.question_parts:
+                    if p.part_num > part.part_num and p.part_num <= new_pos:
+                        p.part_num -= 1
+            else:
+                for p in question.question_parts:
+                    if p.part_num < part.part_num and p.part_num >= new_pos:
+                        p.part_num += 1
+            part.part_num = new_pos
+        if 'directions' in post_data['params']:
+            print('here')
+            part.direction = post_data['params']['directions']
+        sess.commit()
+
     return jsonify(response_object)
 
 if __name__ == '__main__':
