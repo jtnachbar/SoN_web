@@ -253,7 +253,6 @@ export default {
         .then(() => {
           this.getAssignments();
           this.getSelectedAssignment(assignName);
-          this.getQuestions();
           this.message = 'Assignment added';
           this.showMessage = true;
         })

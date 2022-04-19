@@ -38,10 +38,8 @@ export default {
     submitDirections() {
       const path = `http://localhost:5000/part/${this.$parent.selected_assign.name}/${this.$parent.selected_question.name}/${this.$parent.selected_part.part_num}`;
       axios.patch(path, {
-        params: {
-          token: 'test token',
-          directions: this.directions,
-        },
+        token: 'test token',
+        directions: this.directions,
       });
     },
     updateDirections() {

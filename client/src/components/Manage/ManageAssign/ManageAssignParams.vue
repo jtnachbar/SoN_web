@@ -48,10 +48,8 @@ export default {
     submitParamRule() {
       const path = `http://localhost:5000/question/${this.$parent.selected_assign.name}/${this.$parent.selected_question.name}`;
       axios.patch(path, {
-        params: {
-          token: 'test token',
-          param_func: this.paramFunc,
-        },
+        token: 'test token',
+        param_func: this.paramFunc,
       })
         .catch((error) => {
           // eslint-disable-next-line
@@ -61,10 +59,8 @@ export default {
     sampleParamRule() {
       const path = 'http://localhost:5000/sampleparamfunc';
       axios.put(path, {
-        params: {
-          token: 'test token',
-          param_func: this.paramFunc,
-        },
+        token: 'test token',
+        param_func: this.paramFunc,
       })
         .then((res) => {
           this.paramSample = res.data.param_sample;

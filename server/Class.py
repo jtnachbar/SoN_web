@@ -78,6 +78,7 @@ class Question(Base):
     name = Column(String, primary_key=True)
     params = relationship('ParamList')
     param_func = Column(String)
+    param_num = Column(Integer)
     format = Column(String)
     assignment_name = Column(Integer, ForeignKey('assignment.name'))
     question_parts = relationship('QuestionPart')
@@ -90,7 +91,7 @@ class Question(Base):
         self.question_parts = []
 
     def as_dict(self):
-        return {'name': self.name, 'format': self.format, 'param_func': self.param_func}
+        return {'name': self.name, 'format': self.format, 'param_num': self.param_num, 'param_func': self.param_func}
 
 class QuestionPart(Base):
     __tablename__ = 'question_part'

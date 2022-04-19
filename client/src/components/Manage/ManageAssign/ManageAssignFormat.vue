@@ -40,12 +40,11 @@ export default {
   methods: {
     submitFormat() {
       const path = `http://localhost:5000/question/${this.$parent.selected_assign.name}/${this.$parent.selected_question.name}`;
-      axios.patch(path, {
-        params: {
+      axios.patch(path,
+        {
           token: 'test token',
           format: this.format,
-        },
-      });
+        });
     },
     updateFormat(questionName) {
       const path = `http://localhost:5000/question/${this.$parent.selected_assign.name}/${questionName}`;

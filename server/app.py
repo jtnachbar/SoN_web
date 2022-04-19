@@ -191,14 +191,15 @@ def question(assign_name=None, question_name=None):
         assign = [a for a in amth_class.assignments if a.name == assign_name][0]
         if assign == None:
             response_object['status'] = 'failure'
+            print('failed a')
             return jsonify(response_object)
-        for a in amth_class.assignments:
-            for q in a.questions:
-                if q.name == question_name:
-                    response_object['status'] = 'failure'
-                    response_object['message'] = 'Assignment already exists!'
-                    return jsonify(response_object)
         if request.method == 'POST':
+            for a in amth_class.assignments:
+                for q in a.questions:
+                    if q.name == question_name:
+                        response_object['status'] = 'failure'
+                        response_object['message'] = 'Question already exists!'
+                        return jsonify(response_object)
             new_question = Question(
                 name=question_name,
             )
@@ -210,14 +211,14 @@ def question(assign_name=None, question_name=None):
             remove_question(assign_name, question_name)
             response_object['message'] = 'Assignment removed!'
         if request.method == 'PATCH':
-            post_data = request.get_json()
+            patch_data = request.get_json()
             assign = [a for a in amth_class.assignments if a.name == assign_name][0]
             question = [q for q in assign.questions if q.name==question_name][0]
             for param in ("format", "param_func"):
-                if param in post_data['params']:
-                    setattr(question, param, post_data['params'][param])
+                if param in patch_data:
+                    setattr(question, param, patch_data[param])
                     if param == 'param_func':
-                        add_params(question, post_data['params']['param_func'])
+                        add_params(question, patch_data['param_func'])
                 sess.commit()
             print(question.as_dict())
     return jsonify(response_object)
@@ -232,17 +233,34 @@ def add_params(question, param_func):
         for (i, p) in enumerate(params):
             p_list.params.append(Param(i, p))
         question.params.append(p_list)
+        question.param_num = len(p_list.params)
         print(question.params[0].params)
 
 @app.route('/sampleparamfunc', methods=['PUT'])
 def sample_param_func():
     response_object = {'status': 'success', 'param_sample': ''}
-    post_data = request.get_json()
-    param_func = post_data['params']['param_func']
+    put_data = request.get_json()
+    param_func = put_data['param_func']
     param_func = "global params\n" + param_func
     # Scary, I know. Only trusted users can access this endpoint.
     exec(param_func)
     response_object['param_sample'] = params
+    return jsonify(response_object)
+
+test_res = ''
+@app.route('/samplegradingrule', methods=['PUT'])
+def sample_grading_rule():
+    response_object = {'status': 'success', 'test_res': ''}
+    put_data = request.get_json()
+    grading_rule = put_data['grading_rule']
+    grading_rule = "global test_res\ntest_res = False\n" + grading_rule
+    grading_rule = grading_rule.replace("${s}", put_data['test_ans'])
+    for (i, val) in enumerate(put_data['params']):
+        grading_rule = grading_rule.replace("${" + str(i+1) + "}", val)
+    # Scary, I know. Only trusted users can access this endpoint.
+    exec(grading_rule)
+    print(test_res)
+    response_object['test_res'] = str(test_res)
     return jsonify(response_object)
 
 @app.route('/parts/<assign_name>/<question_name>', methods=['GET'])
@@ -252,7 +270,6 @@ def get_parts(assign_name, question_name):
     question = [q for q in assign.questions if q.name==question_name][0]
     question.question_parts.sort(key=lambda x: x.part_num)
     response_object['parts'] = [p.as_dict() for p in question.question_parts]
-    print(response_object)
     return jsonify(response_object)
 
 @app.route('/part/<assign_name>/<question_name>/<part_num>', methods=['GET', 'POST', 'PATCH', 'DELETE'])
@@ -267,7 +284,6 @@ def part(assign_name, question_name, part_num):
         response_object['status'] = 'failure'
         return jsonify(response_object)
     if request.method == 'GET':
-        print([p.part_num for p in question.question_parts])
         response_object['part'] = [p.as_dict() for p in question.question_parts if p.part_num == int(part_num)][0]
     elif request.method == 'POST':
         new_part = QuestionPart()
@@ -277,7 +293,6 @@ def part(assign_name, question_name, part_num):
         else:
             largest_num = max([int(p.part_num) for p in question.question_parts]) + 1
         new_part.part_num = largest_num
-        print(new_part)
         question.question_parts.append(new_part)
         sess.add(new_part)
         sess.commit()
@@ -289,13 +304,13 @@ def part(assign_name, question_name, part_num):
                 part.part_num -= 1
         response_object['message'] = 'Part removed!'
     elif request.method == 'PATCH':
-        post_data = request.get_json()
+        patch_data = request.get_json()
         part = [p for p in question.question_parts if p.part_num == int(part_num)][0]
         if part == None:
             response_object['status'] = 'failure'
             return jsonify(response_object)
-        if 'part_order' in post_data['params']:
-            new_pos = int(post_data['params']['part_order'])
+        if 'part_order' in patch_data:
+            new_pos = int(patch_data['part_order'])
             if part.part_num < new_pos:
                 for p in question.question_parts:
                     if p.part_num > part.part_num and p.part_num <= new_pos:
@@ -305,9 +320,10 @@ def part(assign_name, question_name, part_num):
                     if p.part_num < part.part_num and p.part_num >= new_pos:
                         p.part_num += 1
             part.part_num = new_pos
-        if 'directions' in post_data['params']:
-            print('here')
-            part.direction = post_data['params']['directions']
+        if 'directions' in patch_data:
+            part.direction = patch_data['directions']
+        if 'grading_rule' in patch_data:
+            part.grading_rule = patch_data['grading_rule']
         sess.commit()
 
     return jsonify(response_object)
