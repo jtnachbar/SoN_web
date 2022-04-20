@@ -36,6 +36,8 @@ engine = create_engine('sqlite:///class.db', connect_args = {"check_same_thread"
 Session = sessionmaker(bind=engine)
 sess = Session()
 
+app.config["session"] = sess
+
 Base.metadata.create_all(engine)
 
 amth_class = sess.query(Class).first()
@@ -46,6 +48,10 @@ if not amth_class:
     amth_class = Class()
     sess.add(amth_class)
     sess.commit()
+
+from student_api import student_api
+
+app.register_blueprint(student_api)
 
 @app.route('/login/<ticket>', methods=['GET'])
 def login(ticket):
@@ -178,6 +184,10 @@ def assign(assign_name=None):
 def get_questions(assign_name=None):
     response_object = {'status': 'success'}
     assign = [a for a in amth_class.assignments if a.name == assign_name][0]
+    if assign == None:
+        response_object['status'] = 'failure'
+        response_object['message'] = 'No assignment found'
+        return jsonify(response_object)
     response_object['questions'] = [q.as_dict() for q in assign.questions]
     return jsonify(response_object)
 
@@ -191,14 +201,14 @@ def question(assign_name=None, question_name=None):
         assign = [a for a in amth_class.assignments if a.name == assign_name][0]
         if assign == None:
             response_object['status'] = 'failure'
-            print('failed a')
+            response_object['message'] = 'No assignment found'
             return jsonify(response_object)
         if request.method == 'POST':
             for a in amth_class.assignments:
                 for q in a.questions:
                     if q.name == question_name:
                         response_object['status'] = 'failure'
-                        response_object['message'] = 'Question already exists!'
+                        response_object['message'] = 'Question already exists'
                         return jsonify(response_object)
             new_question = Question(
                 name=question_name,

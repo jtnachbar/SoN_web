@@ -41,7 +41,7 @@
         class="mr-2 my-2">
         <b-dropdown-item v-for="question in questions" v-bind:key="question.name"
         @click="getSelectedQuestion(question.name); selected_question.name = question.name;
-        getParts();">
+        selected_part = { part_num: '', direction: '' }; getParts();">
           {{ question.name }} </b-dropdown-item>
         <b-dropdown-divider></b-dropdown-divider>
         <b-dropdown-item v-b-modal.add-question-modal> Add Question</b-dropdown-item>
@@ -334,7 +334,6 @@ export default {
         },
       })
         .then((res) => {
-          console.log(res.data.assignment);
           this.selected_assign = res.data.assignment;
         })
         .catch((error) => {
@@ -399,7 +398,6 @@ export default {
       })
         .then((res) => {
           this.questions = res.data.questions;
-          console.log(this.questions);
         })
         .catch((error) => {
           // eslint-disable-next-line
@@ -430,7 +428,6 @@ export default {
       })
         .then((res) => {
           this.parts = res.data.parts;
-          console.log(this.parts);
         })
         .catch((error) => {
           // eslint-disable-next-line
@@ -511,4 +508,5 @@ export default {
     this.getAssignments();
   },
 };
+
 </script>

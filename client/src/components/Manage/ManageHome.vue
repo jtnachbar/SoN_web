@@ -4,7 +4,12 @@
         type="button"
         class="btn btn-success btn-md float-right"
         @click="login()">
-      {{ this.$session.get('user') }}
+      <div v-if="this.$session.get('user') != undefined">
+        {{ this.$session.get('user') }}
+      </div>
+      <div v-else>
+        Login
+      </div>
     </button>
     <div class="row">
       <h1>Manage Course</h1>
