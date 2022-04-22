@@ -70,10 +70,14 @@ export default {
     sampleGradingRule() {
       const path = 'http://localhost:5000/samplegradingrule';
       axios.put(path, {
-        token: 'test token',
         grading_rule: this.gradingRule,
         params: this.paramList,
         test_ans: this.testAns,
+      }, {
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
+        },
       })
         .then((res) => {
           this.testRes = res.data.test_res;
@@ -94,8 +98,9 @@ export default {
     updateGradingRule() {
       const path = `http://localhost:5000/part/${this.$parent.selected_assign.name}/${this.$parent.selected_question.name}/${this.$parent.selected_part.part_num}`;
       axios.get(path, {
-        params: {
-          token: 'test token',
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
         },
       })
         .then((res) => {
@@ -109,8 +114,9 @@ export default {
     updateParamNum() {
       const path = `http://localhost:5000/question/${this.$parent.selected_assign.name}/${this.$parent.selected_question.name}`;
       axios.get(path, {
-        params: {
-          token: 'test token',
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
         },
       })
         .then((res) => {
@@ -126,6 +132,8 @@ export default {
     },
   },
   mounted() {
+    this.token = this.$session.get('token');
+    this.user = this.$session.get('user');
     this.updateGradingRule();
     this.updateParamNum();
   },

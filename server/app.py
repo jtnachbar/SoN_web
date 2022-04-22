@@ -3,8 +3,8 @@ from flask_cors import CORS
 from itsdangerous import json
 from sqlalchemy import delete, create_engine
 from cas import CASClient
-from cryptography.fernet import Fernet
 import random
+import secrets
 
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
@@ -13,10 +13,6 @@ from Class import Class, Student, Assignment, Question, QuestionPart, Param, Par
 
 # configuration
 DEBUG = True
-
-# TEST KEY, NOT THE REAL KEY, DON'T EVEN TRY IT :)
-key = b'SWxUk5xH8mTXngXWpPKGoO7N6ZSzg-2VAlpNuvUKJu4='
-f = Fernet(key)
 
 # instantiate the app
 app = Flask(__name__)
@@ -53,6 +49,24 @@ from student_api import student_api
 
 app.register_blueprint(student_api)
 
+def check_ta_auth(request, response_object):
+    if 'Authorization' not in request.headers or 'Net_Id' not in request.headers:
+        response_object['status'] = 'failure'
+        return False
+    else:
+        TA_list = [s for s in amth_class.students if s.net_id == request.headers['Net_Id'] and s.is_TA]
+        if TA_list == None:
+            response_object['status'] = 'failure'
+            return False
+        else:
+            TA = TA_list[0] 
+            if request.headers['Authorization'] != TA.token:
+                print(request.headers['Authorization'])
+                print(TA.token)
+                response_object['status'] = 'failure'
+                return False
+    return True
+
 @app.route('/login/<ticket>', methods=['GET'])
 def login(ticket):
     response_object = {'status': 'success'}
@@ -70,10 +84,18 @@ def login(ticket):
 
     if not user:
         response_object['status'] = 'failure'
-        response_object['username'] = 'None'
+        response_object['username'] = ''
     else:  # Login successfully, redirect according `next` query parameter.
-        response_object['username'] = user
-
+        response_object['is_TA'] = 'false'
+        for s in amth_class.students:
+            if s.net_id == user:
+                response_object['username'] = user
+                token = secrets.randbits(128)
+                response_object['token'] = str(token)
+                s.token = str(token)
+                if s.is_TA:
+                    response_object['is_TA'] = 'true'
+    print(response_object)
     return(jsonify(response_object))
 
 def remove_student(net_id):
@@ -107,13 +129,16 @@ def status():
     if request.method == 'GET':
         response_object['status'] = web_status
     if request.method == 'PUT':
-        put_data = request.get_json(force=True)
-        web_status = put_data.get('status')
+        if check_ta_auth(request, response_object):
+            put_data = request.get_json(force=True)
+            web_status = put_data.get('status')
     return jsonify(response_object)
 
 @app.route('/manage/student', methods=['GET', 'POST', 'DELETE'])
 def modify_student():
     response_object = {'status': 'success'}
+    if not check_ta_auth(request, response_object):
+        return jsonify(response_object)
     if request.method == 'POST':
         post_data = request.get_json(force=True)
         new_ta = Student(
@@ -140,12 +165,16 @@ def modify_student():
 @app.route('/assigns', methods=['GET'])
 def get_assigns():
     response_object = {'status': 'success'}
+    if not check_ta_auth(request, response_object):
+        return jsonify(response_object)
     response_object['assignments'] = [a.as_dict() for a in amth_class.assignments]
     return jsonify(response_object)
 
 @app.route('/assign/<assign_name>', methods=['GET', 'POST', 'DELETE', 'PATCH'])
 def assign(assign_name=None):
     response_object = {'status': 'success'}
+    if not check_ta_auth(request, response_object):
+        return jsonify(response_object)
     if request.method == 'POST':
         for a in amth_class.assignments:
             if assign_name == a.name:
@@ -166,13 +195,13 @@ def assign(assign_name=None):
         assign = [a for a in amth_class.assignments if a.name == assign_name][0]
         response_object['assignment'] = assign.as_dict()
     if request.method == 'PATCH':
-        post_data = request.get_json()
+        patch_data = request.get_json()
         assign = [a for a in amth_class.assignments if a.name == assign_name][0]
         for param in ('active', 'published'):
-            if param in post_data['params']:
-                if post_data['params'][param] == True:
+            if param in patch_data:
+                if patch_data[param] == True:
                     setattr(assign, param, True)
-                elif post_data['params'][param] == False:
+                elif patch_data[param] == False:
                     setattr(assign, param, False)
                 else:
                     response_object['status'] = 'failure'
@@ -183,6 +212,8 @@ def assign(assign_name=None):
 @app.route('/questions/<assign_name>', methods=['GET', 'POST', 'DELETE'])
 def get_questions(assign_name=None):
     response_object = {'status': 'success'}
+    if not check_ta_auth(request, response_object):
+        return jsonify(response_object)
     assign = [a for a in amth_class.assignments if a.name == assign_name][0]
     if assign == None:
         response_object['status'] = 'failure'
@@ -194,6 +225,8 @@ def get_questions(assign_name=None):
 @app.route('/question/<assign_name>/<question_name>', methods=['GET', 'POST', 'PATCH', 'DELETE'])
 def question(assign_name=None, question_name=None):
     response_object = {'status': 'success'}
+    if not check_ta_auth(request, response_object):
+        return jsonify(response_object)
     if request.method == 'GET':
         assign = [a for a in amth_class.assignments if a.name == assign_name][0]
         response_object['question'] = [q.as_dict() for q in assign.questions if q.name==question_name][0]
@@ -249,6 +282,8 @@ def add_params(question, param_func):
 @app.route('/sampleparamfunc', methods=['PUT'])
 def sample_param_func():
     response_object = {'status': 'success', 'param_sample': ''}
+    if not check_ta_auth(request, response_object):
+        return jsonify(response_object)
     put_data = request.get_json()
     param_func = put_data['param_func']
     param_func = "global params\n" + param_func
@@ -261,6 +296,8 @@ test_res = ''
 @app.route('/samplegradingrule', methods=['PUT'])
 def sample_grading_rule():
     response_object = {'status': 'success', 'test_res': ''}
+    if not check_ta_auth(request, response_object):
+        return jsonify(response_object)
     put_data = request.get_json()
     grading_rule = put_data['grading_rule']
     grading_rule = "global test_res\ntest_res = False\n" + grading_rule
@@ -276,6 +313,8 @@ def sample_grading_rule():
 @app.route('/parts/<assign_name>/<question_name>', methods=['GET'])
 def get_parts(assign_name, question_name):
     response_object = {'status': 'success'}
+    if not check_ta_auth(request, response_object):
+        return jsonify(response_object)
     assign = [a for a in amth_class.assignments if a.name == assign_name][0]
     question = [q for q in assign.questions if q.name==question_name][0]
     question.question_parts.sort(key=lambda x: x.part_num)
@@ -285,6 +324,8 @@ def get_parts(assign_name, question_name):
 @app.route('/part/<assign_name>/<question_name>/<part_num>', methods=['GET', 'POST', 'PATCH', 'DELETE'])
 def part(assign_name, question_name, part_num):
     response_object = {'status': 'success'}
+    if not check_ta_auth(request, response_object):
+        return jsonify(response_object)
     assign = [a for a in amth_class.assignments if a.name == assign_name][0]
     if assign == None:
         response_object['status'] = 'failure'

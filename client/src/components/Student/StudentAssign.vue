@@ -4,13 +4,19 @@
         type="button"
         class="btn btn-success btn-md float-right"
         @click="login()">
-        <div v-if="this.$session.get('user') != undefined">
+        <div>
           {{ this.$session.get('user') }}
         </div>
-        <div v-else>
-          Login
-        </div>
     </button>
+    <a href='http://localhost:8080/manage'>
+      <button v-if="this.$session.get('is_TA') === 'true'"
+          type="button"
+          class="btn btn-secondary btn-md float-right mx-2">
+          <div>
+            Manage
+          </div>
+      </button>
+    </a>
     <div class="row">
       <h1>Assignments</h1>
     </div>
@@ -47,6 +53,10 @@
           {{ part.part_num }} </b-dropdown-item>
         </b-dropdown>
     </div>
+    <br>
+    <div class="px-3 row">
+      <a> {{ this.selected_question.format }} </a>
+    </div>
   </div>
 </template>
 
@@ -76,12 +86,14 @@ export default {
     getAssignments() {
       const path = 'http://localhost:5000/student/assigns';
       axios.get(path, {
-        params: {
-          token: 'test token',
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
         },
       })
         .then((res) => {
           this.assignments = res.data.assignments;
+          console.log(this.assignments);
         })
         .catch((error) => {
           // eslint-disable-next-line
@@ -89,25 +101,17 @@ export default {
         });
     },
     getSelectedAssignment(assignmentName) {
-      const path = `http://localhost:5000/student/assign/${assignmentName}`;
-      axios.get(path, {
-        params: {
-          token: 'test token',
-        },
-      })
-        .then((res) => {
-          this.selected_assign = res.data.assignment;
-        })
-        .catch((error) => {
-          // eslint-disable-next-line
-          console.error(error);
-        });
+      const result = this.assignments.filter((a) => a.name === assignmentName);
+      if (result !== []) {
+        [this.selected_assign] = result;
+      }
     },
     getQuestions() {
-      const path = `http://localhost:5000/student/questions/${this.selected_assign.name}`;
+      const path = `http://localhost:5000/student/questions/${this.selected_assign.name}/${this.$session.get('user')}`;
       axios.get(path, {
-        params: {
-          token: 'test token',
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
         },
       })
         .then((res) => {
@@ -119,25 +123,17 @@ export default {
         });
     },
     getSelectedQuestion(questionName) {
-      const path = `http://localhost:5000/student/question/${this.selected_assign.name}/${questionName}`;
-      axios.get(path, {
-        params: {
-          token: 'test token',
-        },
-      })
-        .then((res) => {
-          this.selected_question = res.data.question;
-        })
-        .catch((error) => {
-          // eslint-disable-next-line
-          console.error(error);
-        });
+      const result = this.questions.filter((q) => q.name === questionName);
+      if (result !== []) {
+        [this.selected_question] = result;
+      }
     },
     getParts() {
       const path = `http://localhost:5000/student/parts/${this.selected_assign.name}/${this.selected_question.name}`;
       axios.get(path, {
-        params: {
-          token: 'test token',
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
         },
       })
         .then((res) => {
@@ -148,38 +144,13 @@ export default {
           console.error(error);
         });
     },
-    getSelectedPart(partNum) {
-      const path = `http://localhost:5000/student/part/${this.selected_assign.name}/${this.selected_question.name}/${partNum}`;
-      axios.get(path, {
-        params: {
-          token: 'test token',
-        },
-      })
-        .then((res) => {
-          this.selected_part = res.data.part;
-        })
-        .catch((error) => {
-          // eslint-disable-next-line
-          console.error(error);
-        });
-    },
-    getParams() {
-      const path = `http://localhost:5000/student/params/${this.selected_assign.name}/${this.selected_question.name}`;
-      axios.get(path, {
-        params: {
-          token: 'test token',
-        },
-      })
-        .then((res) => {
-          this.params = res.data.params;
-        })
-        .catch((error) => {
-          // eslint-disable-next-line
-          console.error(error);
-        });
-    },
   },
   created() {
+    if (this.$session.get('user') === '') {
+      this.$router.push('/login?unauthorized=true');
+    }
+    this.token = this.$session.get('token');
+    this.user = this.$session.get('user');
     this.getAssignments();
   },
 };

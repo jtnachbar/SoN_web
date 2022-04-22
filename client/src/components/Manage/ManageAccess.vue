@@ -25,6 +25,8 @@ export default {
   data() {
     return {
       web_status: '',
+      token: '',
+      user: '',
     };
   },
   methods: {
@@ -42,7 +44,12 @@ export default {
     },
     updateStatus(payload) {
       const path = 'http://localhost:5000/status';
-      axios.put(path, payload)
+      axios.put(path, payload, {
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
+        },
+      })
         .then(() => {
           this.checkStatus();
         })
@@ -54,6 +61,8 @@ export default {
     },
   },
   created() {
+    this.token = this.$session.get('token');
+    this.user = this.$session.get('user');
     this.checkStatus();
   },
 };

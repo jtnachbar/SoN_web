@@ -106,6 +106,10 @@ export default {
         params: {
           get_ta: 'true',
         },
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
+        },
       })
         .then((res) => {
           this.TAs = res.data.students;
@@ -118,7 +122,12 @@ export default {
     },
     addTA(payload) {
       const path = 'http://localhost:5000/manage/student';
-      axios.post(path, payload)
+      axios.post(path, payload, {
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
+        },
+      })
         .then(() => {
           this.getTAs();
           this.message = 'TA added';
@@ -132,7 +141,13 @@ export default {
     },
     remTA(payload) {
       const path = 'http://localhost:5000/manage/student';
-      axios.delete(path, { data: payload })
+      axios.delete(path, {
+        data: payload,
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
+        },
+      })
         .then(() => {
           this.getTAs();
           this.message = 'TA removed';
@@ -185,6 +200,8 @@ export default {
     },
   },
   created() {
+    this.token = this.$session.get('token');
+    this.user = this.$session.get('user');
     this.getTAs();
   },
 };

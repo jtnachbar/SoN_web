@@ -120,7 +120,10 @@ export default {
       axios.get(path, {
         params: {
           get_ta: '',
-          token: 'test token',
+        },
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
         },
       })
         .then((res) => {
@@ -134,7 +137,12 @@ export default {
     },
     addStudent(payload) {
       const path = 'http://localhost:5000/manage/student';
-      axios.post(path, payload)
+      axios.post(path, payload, {
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
+        },
+      })
         .then(() => {
           this.getStudents();
           this.message = 'Student added';
@@ -148,7 +156,13 @@ export default {
     },
     remStudent(payload) {
       const path = 'http://localhost:5000/manage/student';
-      axios.delete(path, { data: payload })
+      axios.delete(path, {
+        data: payload,
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
+        },
+      })
         .then(() => {
           this.getStudents();
           this.message = 'Student removed';
@@ -201,6 +215,8 @@ export default {
     },
   },
   created() {
+    this.token = this.$session.get('token');
+    this.user = this.$session.get('user');
     this.getStudents();
   },
 };

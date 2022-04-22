@@ -2,8 +2,7 @@
   <div class="container-lg border-top border-bottom rounded py-2">
     <button
         type="button"
-        class="btn btn-success btn-md float-right"
-        @click="login()">
+        class="btn btn-success btn-md float-right">
       <div v-if="this.$session.get('user') != undefined">
         {{ this.$session.get('user') }}
       </div>
@@ -11,6 +10,15 @@
         Login
       </div>
     </button>
+    <a href='http://localhost:8080/'>
+      <button
+          type="button"
+          class="btn btn-secondary btn-md float-right mx-2">
+          <div>
+            Student
+          </div>
+      </button>
+    </a>
     <div class="row">
       <h1>Manage Course</h1>
     </div>
@@ -104,6 +112,9 @@ export default {
 
   },
   created() {
+    if (this.$session.get('is_TA') === 'false') {
+      this.$router.push('/login?unauthorized=true');
+    }
     this.showComp = 'manage_home';
   },
 };

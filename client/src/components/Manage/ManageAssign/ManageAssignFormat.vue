@@ -40,17 +40,19 @@ export default {
   methods: {
     submitFormat() {
       const path = `http://localhost:5000/question/${this.$parent.selected_assign.name}/${this.$parent.selected_question.name}`;
-      axios.patch(path,
-        {
-          token: 'test token',
-          format: this.format,
-        });
+      axios.patch(path, { format: this.format }, {
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
+        },
+      });
     },
     updateFormat(questionName) {
       const path = `http://localhost:5000/question/${this.$parent.selected_assign.name}/${questionName}`;
       axios.get(path, {
-        params: {
-          token: 'test token',
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
         },
       })
         .then((res) => {
@@ -63,6 +65,8 @@ export default {
     },
   },
   mounted() {
+    this.token = this.$session.get('token');
+    this.user = this.$session.get('user');
     this.updateFormat(this.$parent.selected_question.name);
   },
 };

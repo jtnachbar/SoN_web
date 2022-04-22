@@ -47,9 +47,11 @@ export default {
   methods: {
     submitParamRule() {
       const path = `http://localhost:5000/question/${this.$parent.selected_assign.name}/${this.$parent.selected_question.name}`;
-      axios.patch(path, {
-        token: 'test token',
-        param_func: this.paramFunc,
+      axios.patch(path, { param_func: this.paramFunc }, {
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
+        },
       })
         .catch((error) => {
           // eslint-disable-next-line
@@ -58,9 +60,11 @@ export default {
     },
     sampleParamRule() {
       const path = 'http://localhost:5000/sampleparamfunc';
-      axios.put(path, {
-        token: 'test token',
-        param_func: this.paramFunc,
+      axios.put(path, { param_func: this.paramFunc }, {
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
+        },
       })
         .then((res) => {
           this.paramSample = res.data.param_sample;
@@ -81,8 +85,9 @@ export default {
     updateParamFunc(questionName) {
       const path = `http://localhost:5000/question/${this.$parent.selected_assign.name}/${questionName}`;
       axios.get(path, {
-        params: {
-          token: 'test token',
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
         },
       })
         .then((res) => {
@@ -96,6 +101,8 @@ export default {
     },
   },
   mounted() {
+    this.token = this.$session.get('token');
+    this.user = this.$session.get('user');
     this.updateParamFunc(this.$parent.selected_question.name);
   },
 };

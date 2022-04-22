@@ -37,16 +37,19 @@ export default {
   methods: {
     submitDirections() {
       const path = `http://localhost:5000/part/${this.$parent.selected_assign.name}/${this.$parent.selected_question.name}/${this.$parent.selected_part.part_num}`;
-      axios.patch(path, {
-        token: 'test token',
-        directions: this.directions,
+      axios.patch(path, { directions: this.directions }, {
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
+        },
       });
     },
     updateDirections() {
       const path = `http://localhost:5000/part/${this.$parent.selected_assign.name}/${this.$parent.selected_question.name}/${this.$parent.selected_part.part_num}`;
       axios.get(path, {
-        params: {
-          token: 'test token',
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
         },
       })
         .then((res) => {
@@ -59,6 +62,8 @@ export default {
     },
   },
   mounted() {
+    this.token = this.$session.get('token');
+    this.user = this.$session.get('user');
     this.updateDirections();
   },
 };

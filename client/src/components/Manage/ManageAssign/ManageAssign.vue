@@ -240,16 +240,20 @@ export default {
     onAssignSubmit(evt) {
       evt.preventDefault();
       this.$refs.addAssignModal.hide();
-      const payload = { token: 'test token' };
-      this.addAssignment(this.addAssignForm.name, payload);
+      this.addAssignment(this.addAssignForm.name);
       this.initAssignForm();
     },
     initAssignForm() {
       this.addAssignForm.name = '';
     },
-    addAssignment(assignName, payload) {
+    addAssignment(assignName) {
       const path = `http://localhost:5000/assign/${assignName}`;
-      axios.post(path, payload)
+      axios.post(path, {
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
+        },
+      })
         .then(() => {
           this.getAssignments();
           this.getSelectedAssignment(assignName);
@@ -265,15 +269,17 @@ export default {
     onRemAssignSubmit(evt) {
       evt.preventDefault();
       this.$refs.remAssignModal.hide();
-      const payload = {
-        token: 'test token',
-      };
-      this.remAssignment(this.remAssignForm.name, payload);
+      this.remAssignment(this.remAssignForm.name);
       this.remAssignForm.name = '';
     },
-    remAssignment(assignName, payload) {
+    remAssignment(assignName) {
       const path = `http://localhost:5000/assign/${assignName}`;
-      axios.delete(path, payload)
+      axios.delete(path, {
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
+        },
+      })
         .then(() => {
           this.getAssignments();
           this.message = 'Assignment removed';
@@ -290,15 +296,17 @@ export default {
     onRemQuestionSubmit(evt) {
       evt.preventDefault();
       this.$refs.remQuestionModal.hide();
-      const payload = {
-        token: 'test token',
-      };
-      this.remQuestion(this.selected_assign.name, this.remQuestionForm.name, payload);
+      this.remQuestion(this.selected_assign.name, this.remQuestionForm.name);
       this.remQuestionForm.name = '';
     },
-    remQuestion(assignName, questionName, payload) {
+    remQuestion(assignName, questionName) {
       const path = `http://localhost:5000/question/${assignName}/${questionName}`;
-      axios.delete(path, { data: payload })
+      axios.delete(path, {
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
+        },
+      })
         .then(() => {
           this.getQuestions();
           this.message = 'Question removed';
@@ -314,8 +322,9 @@ export default {
     getAssignments() {
       const path = 'http://localhost:5000/assigns';
       axios.get(path, {
-        params: {
-          token: 'test token',
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
         },
       })
         .then((res) => {
@@ -329,8 +338,9 @@ export default {
     getSelectedAssignment(assignmentName) {
       const path = `http://localhost:5000/assign/${assignmentName}`;
       axios.get(path, {
-        params: {
-          token: 'test token',
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
         },
       })
         .then((res) => {
@@ -343,10 +353,10 @@ export default {
     },
     toggleAssignPublished() {
       const path = `http://localhost:5000/assign/${this.selected_assign.name}`;
-      axios.patch(path, {
-        params: {
-          token: 'test token',
-          published: !this.selected_assign.published,
+      axios.patch(path, { published: !this.selected_assign.published }, {
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
         },
       });
       this.getSelectedAssignment(this.selected_assign.name);
@@ -354,10 +364,10 @@ export default {
     },
     toggleAssignActive() {
       const path = `http://localhost:5000/assign/${this.selected_assign.name}`;
-      axios.patch(path, {
-        params: {
-          token: 'test token',
-          active: !this.selected_assign.active,
+      axios.patch(path, { active: !this.selected_assign.active }, {
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
         },
       });
       // I have to do this twice. No, I do not know why.
@@ -367,16 +377,20 @@ export default {
     onQuestionSubmit(evt) {
       evt.preventDefault();
       this.$refs.addQuestionModal.hide();
-      const payload = { token: 'test token' };
-      this.addQuestion(this.selected_assign.name, this.addQuestionForm.name, payload);
+      this.addQuestion(this.selected_assign.name, this.addQuestionForm.name);
       this.initQuestionForm();
     },
     initQuestionForm() {
       this.addQuestionForm.name = '';
     },
-    addQuestion(assignName, questionName, payload) {
+    addQuestion(assignName, questionName) {
       const path = `http://localhost:5000/question/${assignName}/${questionName}`;
-      axios.post(path, payload)
+      axios.post(path, {
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
+        },
+      })
         .then(() => {
           this.getQuestions();
           this.message = 'Question added';
@@ -392,8 +406,9 @@ export default {
     getQuestions() {
       const path = `http://localhost:5000/questions/${this.selected_assign.name}`;
       axios.get(path, {
-        params: {
-          token: 'test token',
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
         },
       })
         .then((res) => {
@@ -407,8 +422,9 @@ export default {
     getSelectedQuestion(questionName) {
       const path = `http://localhost:5000/question/${this.selected_assign.name}/${questionName}`;
       axios.get(path, {
-        params: {
-          token: 'test token',
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
         },
       })
         .then((res) => {
@@ -422,8 +438,9 @@ export default {
     getParts() {
       const path = `http://localhost:5000/parts/${this.selected_assign.name}/${this.selected_question.name}`;
       axios.get(path, {
-        params: {
-          token: 'test token',
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
         },
       })
         .then((res) => {
@@ -437,8 +454,9 @@ export default {
     getSelectedPart(partNum) {
       const path = `http://localhost:5000/part/${this.selected_assign.name}/${this.selected_question.name}/${partNum}`;
       axios.get(path, {
-        params: {
-          token: 'test token',
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
         },
       })
         .then((res) => {
@@ -452,8 +470,9 @@ export default {
     addPart() {
       const path = `http://localhost:5000/part/${this.selected_assign.name}/${this.selected_question.name}/0`;
       axios.post(path, {
-        params: {
-          token: 'test token',
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
         },
       })
         .then(() => {
@@ -470,8 +489,9 @@ export default {
     remPart() {
       const path = `http://localhost:5000/part/${this.selected_assign.name}/${this.selected_question.name}/${this.selected_part.part_num}`;
       axios.delete(path, {
-        params: {
-          token: 'test token',
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
         },
       })
         .then(() => {
@@ -489,8 +509,11 @@ export default {
       const path = `http://localhost:5000/part/${this.selected_assign.name}/${this.selected_question.name}/${this.selected_part.part_num}`;
       axios.patch(path, {
         params: {
-          token: 'test token',
           part_order: partOrder,
+        },
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
         },
       })
         .then(() => {
@@ -505,6 +528,8 @@ export default {
     },
   },
   created() {
+    this.token = this.$session.get('token');
+    this.user = this.$session.get('user');
     this.getAssignments();
   },
 };
