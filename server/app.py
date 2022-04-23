@@ -9,7 +9,7 @@ import secrets
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
-from Class import Class, Student, Assignment, Question, QuestionPart, Param, ParamList, Base
+from Class import Class, Student, Assignment, Question, QuestionPart, Param, ParamList, Base, StudentAnswer
 
 # configuration
 DEBUG = True
@@ -61,8 +61,7 @@ def check_ta_auth(request, response_object):
         else:
             TA = TA_list[0] 
             if request.headers['Authorization'] != TA.token:
-                print(request.headers['Authorization'])
-                print(TA.token)
+                print("Different Tokens")
                 response_object['status'] = 'failure'
                 return False
     return True
@@ -95,7 +94,6 @@ def login(ticket):
                 s.token = str(token)
                 if s.is_TA:
                     response_object['is_TA'] = 'true'
-    print(response_object)
     return(jsonify(response_object))
 
 def remove_student(net_id):
@@ -197,7 +195,7 @@ def assign(assign_name=None):
     if request.method == 'PATCH':
         patch_data = request.get_json()
         assign = [a for a in amth_class.assignments if a.name == assign_name][0]
-        for param in ('active', 'published'):
+        for param in ('active', 'published', 'exam'):
             if param in patch_data:
                 if patch_data[param] == True:
                     setattr(assign, param, True)
@@ -246,6 +244,8 @@ def question(assign_name=None, question_name=None):
             new_question = Question(
                 name=question_name,
             )
+            for s in amth_class.students:
+                new_question.params.append(ParamList(s.net_id))
             assign.questions.append(new_question)
             sess.add(new_question)
             sess.commit()
@@ -277,7 +277,6 @@ def add_params(question, param_func):
             p_list.params.append(Param(i, p))
         question.params.append(p_list)
         question.param_num = len(p_list.params)
-        print(question.params[0].params)
 
 @app.route('/sampleparamfunc', methods=['PUT'])
 def sample_param_func():
@@ -305,9 +304,11 @@ def sample_grading_rule():
     for (i, val) in enumerate(put_data['params']):
         grading_rule = grading_rule.replace("${" + str(i+1) + "}", val)
     # Scary, I know. Only trusted users can access this endpoint.
-    exec(grading_rule)
-    print(test_res)
-    response_object['test_res'] = str(test_res)
+    try:
+        exec(grading_rule)
+        response_object['test_res'] = str(test_res)
+    except:
+        response_object['test_res'] = 'Script Error'
     return jsonify(response_object)
 
 @app.route('/parts/<assign_name>/<question_name>', methods=['GET'])
@@ -326,6 +327,8 @@ def part(assign_name, question_name, part_num):
     response_object = {'status': 'success'}
     if not check_ta_auth(request, response_object):
         return jsonify(response_object)
+    print("Auth")
+    print(request)
     assign = [a for a in amth_class.assignments if a.name == assign_name][0]
     if assign == None:
         response_object['status'] = 'failure'
@@ -344,6 +347,12 @@ def part(assign_name, question_name, part_num):
         else:
             largest_num = max([int(p.part_num) for p in question.question_parts]) + 1
         new_part.part_num = largest_num
+
+        # create a new student answer for each student
+        for s in amth_class.students:
+            new_answer = StudentAnswer(s.net_id)
+            new_part.student_answers.append(new_answer)
+
         question.question_parts.append(new_part)
         sess.add(new_part)
         sess.commit()
@@ -356,6 +365,7 @@ def part(assign_name, question_name, part_num):
         response_object['message'] = 'Part removed!'
     elif request.method == 'PATCH':
         patch_data = request.get_json()
+        print(patch_data)
         part = [p for p in question.question_parts if p.part_num == int(part_num)][0]
         if part == None:
             response_object['status'] = 'failure'
@@ -375,6 +385,8 @@ def part(assign_name, question_name, part_num):
             part.direction = patch_data['directions']
         if 'grading_rule' in patch_data:
             part.grading_rule = patch_data['grading_rule']
+        if 'point_val' in patch_data:
+            part.point_val = patch_data['point_val']
         sess.commit()
 
     return jsonify(response_object)

@@ -34,8 +34,7 @@
           </div>
         </div>
         <div class="row pb-3" v-if="testRes != ''">
-          <h4> Sample Output: </h4>
-          <h4> {{ testRes }} </h4>
+          <h4> Sample Output: {{ testRes }} </h4>
         </div>
       </div>
     </div>
@@ -58,9 +57,11 @@ export default {
   methods: {
     submitGradingRule() {
       const path = `http://localhost:5000/part/${this.$parent.selected_assign.name}/${this.$parent.selected_question.name}/${this.$parent.selected_part.part_num}`;
-      axios.patch(path, {
-        token: 'test token',
-        grading_rule: this.gradingRule,
+      axios.patch(path, { grading_rule: this.gradingRule }, {
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
+        },
       })
         .catch((error) => {
           // eslint-disable-next-line

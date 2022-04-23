@@ -38,7 +38,7 @@
         <button class="btn btn-primary" type="button"
         @click="showComp = 'manage_access'">Disable Access</button>
       </div>
-      <div class="col-md-8 </div>">
+      <div class="col-12 </div>">
         <div v-show="this.showComp==='manage_class'">
           <ManageClass />
         </div>

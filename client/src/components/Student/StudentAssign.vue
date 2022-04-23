@@ -49,13 +49,31 @@
         <b-dropdown v-if="selected_question.name != ''" id="part-drop" text="Select Part"
         class="mr-4 my-2">
         <b-dropdown-item v-for="part in parts" v-bind:key="part.part_num"
-        @click="getSelectedPart(part.part_num)">
+        @click="getSelectedPart(part.part_num); getAnswer();">
           {{ part.part_num }} </b-dropdown-item>
         </b-dropdown>
     </div>
-    <br>
+    <hr>
     <div class="px-3 row">
       <a> {{ this.selected_question.format }} </a>
+    </div>
+    <hr>
+    <div class="px-3 row">
+      <a> {{ this.selected_part.direction }} </a>
+    </div>
+    <br>
+    <div v-if="this.selected_part.direction !== ''" class="px-3 row">
+      <input class="col-2 mr-2 form-control"
+            placeholder="Answer" v-model="selected_answer.response"
+            maxlength = "13">
+      <button class='btn btn-success mb-2' @click="submitAnswer(); getAnswerDelay();">
+        Submit </button>
+      <h5 v-if="this.selected_answer.correct===null">
+        <span class="ml-2 badge badge-secondary"> N/A </span> </h5>
+      <h5 v-if="this.selected_answer.correct===true">
+        <span class="ml-2 badge badge-success">  Correct </span> </h5>
+      <h5 v-if="this.selected_answer.correct===false">
+        <span class="ml-2 badge badge-danger"> Wrong </span> </h5>
     </div>
   </div>
 </template>
@@ -75,6 +93,7 @@ export default {
       selected_assign: { name: '', active: '' },
       selected_question: { name: '', format: '' },
       selected_part: { part_num: '', direction: '' },
+      selected_answer: { response: '', correct: '' },
       assignments: [],
       questions: [],
       parts: [],
@@ -83,6 +102,9 @@ export default {
   components: {
   },
   methods: {
+    getAnswerDelay() {
+      setTimeout(() => this.getAnswer(), 500);
+    },
     getAssignments() {
       const path = 'http://localhost:5000/student/assigns';
       axios.get(path, {
@@ -144,9 +166,46 @@ export default {
           console.error(error);
         });
     },
+    getSelectedPart(partNum) {
+      const result = this.parts.filter((p) => p.part_num === partNum);
+      if (result !== []) {
+        [this.selected_part] = result;
+      }
+    },
+    getAnswer() {
+      const path = `http://localhost:5000/student/answer/${this.selected_assign.name}/${this.selected_question.name}/${this.selected_part.part_num}`;
+      axios.get(path, {
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
+        },
+      })
+        .then((res) => {
+          console.log(res.data.answer);
+          this.selected_answer = res.data.answer;
+        })
+        .catch((error) => {
+          // eslint-disable-next-line
+          console.error(error);
+        });
+    },
+    submitAnswer() {
+      const path = `http://localhost:5000/student/answer/${this.selected_assign.name}/${this.selected_question.name}/${this.selected_part.part_num}`;
+      axios.patch(path, { answer: this.selected_answer.response }, {
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
+        },
+      })
+        .catch((error) => {
+          // eslint-disable-next-line
+          console.error(error);
+        });
+    },
   },
   created() {
-    if (this.$session.get('user') === '') {
+    console.log(this.$session.get('user'));
+    if (this.$session.get('user') === undefined) {
       this.$router.push('/login?unauthorized=true');
     }
     this.token = this.$session.get('token');

@@ -75,3 +75,56 @@ def get_parts(assign_name, question_name):
     question.question_parts.sort(key=lambda x: x.part_num)
     response_object['parts'] = [p.as_dict() for p in question.question_parts]
     return jsonify(response_object)
+
+test_res = ''
+@student_api.route('/student/answer/<assign_name>/<question_name>/<part_num>', methods=['GET', 'PATCH'])
+def answer(assign_name, question_name, part_num):
+    response_object = {'status': 'success'}
+    if not check_student_auth(request, response_object):
+        return jsonify(response_object)
+    sess = current_app.config["session"]
+    amth_class = sess.query(Class).first()
+    assign_list = [a for a in amth_class.assignments if a.name == assign_name]
+    if assign_list == []:
+        response_object['status'] = 'failure'
+        response_object['message'] = 'No assignment found'
+        return jsonify(response_object)
+    assign = assign_list[0]
+    question_list = [q for q in assign.questions if q.name==question_name]
+    if question_list == []:
+        response_object['status'] = 'failure'
+        response_object['message'] = 'No assignment found'
+        return jsonify(response_object)
+    question = question_list[0]
+    part_list = [p for p in question.question_parts if p.part_num==int(part_num)]
+    if part_list == []:
+        response_object['status'] = 'failure'
+        response_object['message'] = 'No assignment found'
+        return jsonify(response_object)
+    part = part_list[0]
+    student_answer = [ans for ans in part.student_answers if ans.net_id == request.headers['Net_Id']][0]
+    if request.method == 'GET':
+        response_object['answer'] = student_answer.as_dict()
+    elif request.method == 'PATCH':
+        # Check to make sure we have a direction
+        patch_data = request.get_json()
+        if 'answer' not in patch_data:
+            response_object['status'] = 'failure'
+            response_object['message'] = 'No assignment found'
+            return jsonify(response_object)
+        student_answer.response = patch_data['answer']
+        # evaluate the answer and set 'correct' accordingly
+        param_list = [p.params for p in question.params if p.net_id == request.headers['Net_Id']][0]
+        param_list = [p.param for p in param_list]
+        grading_rule = part.grading_rule
+        grading_rule = "global test_res\ntest_res = False\n" + grading_rule
+        grading_rule = grading_rule.replace("${s}", patch_data['answer'])
+        for (i, val) in enumerate(param_list):
+            grading_rule = grading_rule.replace("${" + str(i+1) + "}", val)
+        try:
+            exec(grading_rule)
+            student_answer.correct = test_res
+        except:
+            student_answer.correct = False
+        sess.commit()
+    return jsonify(response_object)

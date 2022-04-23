@@ -34,6 +34,11 @@
             @click="toggleAssignActive();">
             Active
           </button>
+          <button type="button"
+            :class= "selected_assign.exam?'btn btn-success':'btn btn-danger'"
+            @click="toggleAssignExam();">
+            Exam
+          </button>
         </div>
       </div>
       <div class='row'>
@@ -81,10 +86,14 @@
           @click="setPartOrder(part.part_num); getSelectedPart(part.part_num); getParts()">
             {{ part.part_num }} </b-dropdown-item>
           </b-dropdown>
-          <div class='btn-group m-2 float-right'>
+          <div class='btn-group my-2 ml-2 float-right'>
             <button type="button"
               @click="remPart()"
               class="btn btn-danger"> Delete Part </button>
+          </div>
+          <div class="col-3 input-group my-2">
+            <input @keyup="setPartPoints()" type="number" class="form-control"
+            placeholder="Points" v-model="pointVal">
           </div>
         </div>
       </div>
@@ -224,6 +233,7 @@ export default {
       questions: [],
       parts: [],
       showComponent: 'default',
+      pointVal: '',
     };
   },
   components: {
@@ -248,7 +258,7 @@ export default {
     },
     addAssignment(assignName) {
       const path = `http://localhost:5000/assign/${assignName}`;
-      axios.post(path, {
+      axios.post(path, { }, {
         headers: {
           Authorization: `${this.token}`,
           Net_Id: `${this.user}`,
@@ -374,6 +384,18 @@ export default {
       this.getSelectedAssignment(this.selected_assign.name);
       this.getSelectedAssignment(this.selected_assign.name);
     },
+    toggleAssignExam() {
+      const path = `http://localhost:5000/assign/${this.selected_assign.name}`;
+      axios.patch(path, { exam: !this.selected_assign.exam }, {
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
+        },
+      });
+      // I have to do this twice. No, I do not know why.
+      this.getSelectedAssignment(this.selected_assign.name);
+      this.getSelectedAssignment(this.selected_assign.name);
+    },
     onQuestionSubmit(evt) {
       evt.preventDefault();
       this.$refs.addQuestionModal.hide();
@@ -385,7 +407,7 @@ export default {
     },
     addQuestion(assignName, questionName) {
       const path = `http://localhost:5000/question/${assignName}/${questionName}`;
-      axios.post(path, {
+      axios.post(path, { }, {
         headers: {
           Authorization: `${this.token}`,
           Net_Id: `${this.user}`,
@@ -461,6 +483,7 @@ export default {
       })
         .then((res) => {
           this.selected_part = res.data.part;
+          this.pointVal = res.data.part.point_val;
         })
         .catch((error) => {
           // eslint-disable-next-line
@@ -469,7 +492,7 @@ export default {
     },
     addPart() {
       const path = `http://localhost:5000/part/${this.selected_assign.name}/${this.selected_question.name}/0`;
-      axios.post(path, {
+      axios.post(path, { }, {
         headers: {
           Authorization: `${this.token}`,
           Net_Id: `${this.user}`,
@@ -507,10 +530,7 @@ export default {
     },
     setPartOrder(partOrder) {
       const path = `http://localhost:5000/part/${this.selected_assign.name}/${this.selected_question.name}/${this.selected_part.part_num}`;
-      axios.patch(path, {
-        params: {
-          part_order: partOrder,
-        },
+      axios.patch(path, { part_order: partOrder }, {
         headers: {
           Authorization: `${this.token}`,
           Net_Id: `${this.user}`,
@@ -520,6 +540,23 @@ export default {
           this.message = 'Part changed';
           this.showMessage = true;
           this.getParts();
+        })
+        .catch((error) => {
+          // eslint-disable-next-line
+          console.log(error);
+        });
+    },
+    setPartPoints() {
+      const path = `http://localhost:5000/part/${this.selected_assign.name}/${this.selected_question.name}/${this.selected_part.part_num}`;
+      axios.patch(path, { point_val: this.pointVal }, {
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
+        },
+      })
+        .then(() => {
+          this.message = 'Part changed';
+          this.showMessage = true;
         })
         .catch((error) => {
           // eslint-disable-next-line
