@@ -128,3 +128,33 @@ def answer(assign_name, question_name, part_num):
             student_answer.correct = False
         sess.commit()
     return jsonify(response_object)
+
+@student_api.route('/student/grades', methods=['GET'])
+def get_grades():
+    response_object = {'status': 'success'}
+    if not check_student_auth(request, response_object):
+        return jsonify(response_object)
+    sess = current_app.config["session"]
+    amth_class = sess.query(Class).first()
+    grade_dict = {}
+    for a in amth_class.assignments:
+        grade_dict[a.name] = { 'points': 0, 'total_points': 0, 'questions': {} }
+        grade_dict[a.name]['name'] = a.name
+        for q in a.questions:
+            grade_dict[a.name]['questions'][q.name] = { 'name': q.name, 'parts': {}, 'points': 0, 'total_points': 0 }
+            for p in q.question_parts:
+                grade_dict[a.name]['questions'][q.name]['parts'][str(p.part_num)] = { 'part_num': p.part_num, 'points': 0 }
+                grade_dict[a.name]['questions'][q.name]['parts'][str(p.part_num)]['total'] = p.point_val
+                grade_dict[a.name]['questions'][q.name]['total_points'] += p.point_val
+                grade_dict[a.name]['total_points'] += p.point_val
+                student_answer = [ans for ans in p.student_answers if ans.net_id == request.headers['Net_Id']][0]
+                if student_answer.correct:
+                    grade_dict[a.name]['questions'][q.name]['parts'][str(p.part_num)]['points'] = p.point_val  
+                    grade_dict[a.name]['questions'][q.name]['points'] += p.point_val
+                    grade_dict[a.name]['points'] += p.point_val 
+                else:
+                    grade_dict[a.name]['questions'][q.name]['parts'][str(p.part_num)]['points'] = 0
+    response_object['grades'] = grade_dict
+    print(grade_dict)
+    return jsonify(response_object)
+    

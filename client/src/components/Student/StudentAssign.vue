@@ -2,8 +2,7 @@
   <div class="container-lg border-top border-bottom rounded py-2">
     <button
         type="button"
-        class="btn btn-success btn-md float-right"
-        @click="login()">
+        class="btn btn-success btn-md float-right">
         <div>
           {{ this.$session.get('user') }}
         </div>
@@ -14,6 +13,15 @@
           class="btn btn-secondary btn-md float-right mx-2">
           <div>
             Manage
+          </div>
+      </button>
+    </a>
+    <a href='http://localhost:8080/grades'>
+      <button
+          type="button"
+          class="btn btn-warning btn-md float-right">
+          <div>
+            Grades
           </div>
       </button>
     </a>

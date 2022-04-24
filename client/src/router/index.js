@@ -4,6 +4,7 @@ import VueSessionStorage from 'vue-sessionstorage';
 import Login from '../components/Login.vue';
 import ManageHome from '../components/Manage/ManageHome.vue';
 import StudentAssign from '../components/Student/StudentAssign.vue';
+import StudentGrades from '../components/Student/StudentGrades.vue';
 
 Vue.use(Router);
 Vue.use(VueSessionStorage);
@@ -21,6 +22,11 @@ export default new Router({
       path: '/manage',
       name: 'ManageHome',
       component: ManageHome,
+    },
+    {
+      path: '/grades',
+      name: 'StudentGrades',
+      component: StudentGrades,
     },
     {
       path: '/',

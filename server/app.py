@@ -241,6 +241,10 @@ def question(assign_name=None, question_name=None):
                         response_object['status'] = 'failure'
                         response_object['message'] = 'Question already exists'
                         return jsonify(response_object)
+            if question_name == 'total_points':
+                response_object['status'] = 'failure'
+                response_object['message'] = 'Invalid Name'
+                return jsonify(response_object)
             new_question = Question(
                 name=question_name,
             )

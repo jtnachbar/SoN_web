@@ -108,6 +108,7 @@ class QuestionPart(Base):
 
     def __init__(self):
         self.grading_rule = ''
+        self.point_val = 0
         self.part_num = -1
 
     def as_dict(self):
