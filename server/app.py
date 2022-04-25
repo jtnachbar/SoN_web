@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from flask import Flask, jsonify, request, session, redirect, url_for
 from flask_cors import CORS
 from itsdangerous import json
@@ -5,6 +6,11 @@ from sqlalchemy import delete, create_engine
 from cas import CASClient
 import random
 import secrets
+import shutil
+from datetime import datetime
+import threading
+import os, signal
+
 
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
@@ -120,6 +126,16 @@ def remove_part(question_name, part_num):
     sess.commit()
     return False
 
+params = ''
+def generate_param_list(net_id, param_func):
+    param_func = "global params\n" + param_func
+    p_list = ParamList(net_id)
+    exec(param_func)
+    for (i, p) in enumerate(params):
+        p_list.params.append(Param(i, p))
+    sess.add(p_list)
+    return p_list
+
 @app.route('/status', methods=['GET', 'PUT'])
 def status():
     global web_status
@@ -132,6 +148,26 @@ def status():
             web_status = put_data.get('status')
     return jsonify(response_object)
 
+def create_student(net_id, name, is_TA):
+    new_student = Student(
+        net_id,
+        name,
+        is_TA
+    )
+    for a in amth_class.assignments:
+        for q in a.questions:
+            # Add params
+            p_list = generate_param_list(net_id, q.param_func)
+            q.params.append(p_list)
+            for p in q.question_parts:
+                # Add student answer
+                new_answer = StudentAnswer(net_id)
+                p.student_answers.append(new_answer)
+                sess.add(new_answer)
+        sess.commit()
+    amth_class.students.append(new_student)
+    sess.add(new_student)
+
 @app.route('/manage/student', methods=['GET', 'POST', 'DELETE'])
 def modify_student():
     response_object = {'status': 'success'}
@@ -139,15 +175,15 @@ def modify_student():
         return jsonify(response_object)
     if request.method == 'POST':
         post_data = request.get_json(force=True)
-        new_ta = Student(
-            post_data.get('net_id'),
-            post_data.get('name'),
-            is_TA = bool(post_data.get('is_ta'))
-        )
-        amth_class.students.append(new_ta)
-        sess.add(new_ta)
+        if 'name' in post_data and 'net_id' in post_data:
+            create_student(post_data.get('net_id'), post_data.get('name'), bool(post_data.get('is_ta')))
+        elif 'names' in post_data and 'net_ids' in post_data:
+            net_ids = post_data.get('net_ids').split()
+            names = post_data.get('names').split()
+            for i in range(len(names)):
+                create_student(net_ids[i], names[i], False)
         sess.commit()
-        response_object['message'] = 'TA added!'
+        response_object['message'] = 'Student added!'
     if request.method == 'DELETE':
         post_data = request.get_json()
         net_id = post_data.get('net_id')
@@ -270,15 +306,10 @@ def question(assign_name=None, question_name=None):
             print(question.as_dict())
     return jsonify(response_object)
 
-params = ''
 def add_params(question, param_func):
     question.params = []
     for student in amth_class.students:
-        p_list = ParamList(student.net_id)
-        param_func = "global params\n" + param_func
-        exec(param_func)
-        for (i, p) in enumerate(params):
-            p_list.params.append(Param(i, p))
+        p_list = generate_param_list(student.net_id, param_func)
         question.params.append(p_list)
         question.param_num = len(p_list.params)
 
@@ -395,7 +426,16 @@ def part(assign_name, question_name, part_num):
 
     return jsonify(response_object)
 
+def f(f_stop, parent_pid):
+    if os.getpid() != parent_pid:
+        os.kill(os.getpid(), signal.SIGSTOP)
+    if not f_stop.is_set():
+        # call f() again in 60 seconds
+        threading.Timer(1, f, [f_stop, os.getpid()]).start()
+
 if __name__ == '__main__':
+
+    print(os.getpid())
 
     if amth_class.get_TAs() == []:
         head_ta = Student('jtn26', 'Jamie Nachbar', is_TA=True)
@@ -403,6 +443,9 @@ if __name__ == '__main__':
         sess.add(head_ta)
         sess.commit()
 
+    f_stop = threading.Event()
+    f(f_stop, os.getpid())
+    
     web_status = 'online'
 
     app.run()

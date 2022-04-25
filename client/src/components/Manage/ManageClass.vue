@@ -21,7 +21,7 @@
                <button class = "btn btn-danger btn-md" type="button"
                v-b-modal.remove-modal>Remove Student</button>
                <button class = "btn btn-success btn-md" type="button"
-               v-b-modal.remove-modal>Add CSV</button>
+               v-b-modal.list-modal>Add List</button>
             </div>
         </div>
     </div>
@@ -77,6 +77,37 @@
         </b-button-group>
       </b-form>
     </b-modal>
+    <b-modal ref="addListModal"
+            id="list-modal"
+            title="Add new Students from a list"
+            hide-footer>
+      <b-form @submit="onListSubmit" @reset="onListReset" class="w-100">
+      <b-form-group id="form-names-group"
+                    label="Names:"
+                    label-for="form-names-input">
+          <b-form-input id="form-names-input"
+                        type="text"
+                        v-model="addListForm.names"
+                        required
+                        placeholder="Enter Names (Space Seperated)">
+          </b-form-input>
+        </b-form-group>
+        <b-form-group id="form-netids-group"
+                      label="Net-Ids:"
+                      label-for="form-netids-input">
+            <b-form-input id="form-netids-input"
+                          type="text"
+                          v-model="addListForm.net_ids"
+                          required
+                          placeholder="Enter Net-Ids (Space Seperated)">
+            </b-form-input>
+          </b-form-group>
+        <b-button-group>
+          <b-button type="submit" variant="primary">Submit</b-button>
+          <b-button type="reset" variant="danger">Reset</b-button>
+        </b-button-group>
+      </b-form>
+    </b-modal>
   </div>
 </template>
 
@@ -94,12 +125,15 @@ export default {
       students: [],
       search: '',
       addStudentForm: {
-        title: '',
-        author: '',
-        read: [],
+        name: '',
+        net_id: '',
       },
       remStudentForm: {
         net_id: '',
+      },
+      addListForm: {
+        names: '',
+        net_ids: '',
       },
       message: '',
       showMessage: false,
@@ -128,7 +162,6 @@ export default {
       })
         .then((res) => {
           this.students = res.data.students;
-          console.log(this.students);
         })
         .catch((error) => {
           // eslint-disable-next-line
@@ -174,6 +207,25 @@ export default {
           this.getStudents();
         });
     },
+    addStudents(payload) {
+      const path = 'http://localhost:5000/manage/student';
+      axios.post(path, payload, {
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
+        },
+      })
+        .then(() => {
+          this.getStudents();
+          this.message = 'Students added';
+          this.showMessage = true;
+        })
+        .catch((error) => {
+          // eslint-disable-next-line
+          console.log(error);
+          this.getStudents();
+        });
+    },
     onSubmit(evt) {
       evt.preventDefault();
       this.$refs.addStudentModal.hide();
@@ -200,10 +252,9 @@ export default {
       this.$refs.remStudentModal.hide();
       const payload = {
         net_id: this.remStudentForm.net_id,
-        token: 'test token',
       };
       this.remStudent(payload);
-      this.initForm();
+      this.initRemForm();
     },
     onRemReset(evt) {
       evt.preventDefault();
@@ -212,6 +263,25 @@ export default {
     },
     initRemForm() {
       this.remStudentForm.net_id = '';
+    },
+    onListSubmit(evt) {
+      evt.preventDefault();
+      this.$refs.addListModal.hide();
+      const payload = {
+        names: this.addListForm.names,
+        net_ids: this.addListForm.net_ids,
+      };
+      this.addStudents(payload);
+      this.initListForm();
+    },
+    onListReset(evt) {
+      evt.preventDefault();
+      this.$refs.addListModal.hide();
+      this.initListForm();
+    },
+    initListForm() {
+      this.addListForm.names = '';
+      this.addListForm.net_ids = '';
     },
   },
   created() {

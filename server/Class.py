@@ -142,6 +142,9 @@ class ParamList(Base):
         self.net_id = net_id
         self.params = []
 
+    def __str__(self):
+        return str([p.param for p in self.params])
+
 class Param(Base):
     __tablename__ = 'param'
 
