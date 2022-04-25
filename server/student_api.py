@@ -129,6 +129,32 @@ def answer(assign_name, question_name, part_num):
         sess.commit()
     return jsonify(response_object)
 
+@student_api.route('/student/answers/<assign_name>/<question_name>', methods=['GET'])
+def get_answer_status(assign_name, question_name):
+    response_object = {'status': 'success'}
+    if not check_student_auth(request, response_object):
+        return jsonify(response_object)
+    sess = current_app.config["session"]
+    amth_class = sess.query(Class).first()
+    assign_list = [a for a in amth_class.assignments if a.name == assign_name]
+    if assign_list == []:
+        response_object['status'] = 'failure'
+        response_object['message'] = 'No assignment found'
+        return jsonify(response_object)
+    assign = assign_list[0]
+    question_list = [q for q in assign.questions if q.name==question_name]
+    if question_list == []:
+        response_object['status'] = 'failure'
+        response_object['message'] = 'No assignment found'
+        return jsonify(response_object)
+    question = question_list[0]
+    response_object['answers'] = {}
+    if request.method == 'GET':
+        for p in question.question_parts:
+            student_answer = [ans for ans in p.student_answers if ans.net_id == request.headers['Net_Id']][0]
+            response_object['answers'][p.part_num] = student_answer.correct
+    return jsonify(response_object)
+
 @student_api.route('/student/grades', methods=['GET'])
 def get_grades():
     response_object = {'status': 'success'}

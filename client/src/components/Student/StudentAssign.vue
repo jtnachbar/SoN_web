@@ -50,7 +50,7 @@
         class="mr-2 my-2">
         <b-dropdown-item v-for="question in questions" v-bind:key="question.name"
         @click="getSelectedQuestion(question.name); selected_question.name = question.name;
-        selected_part = { part_num: '', direction: '' }; getParts();">
+        selected_part = { part_num: '', direction: '' }; getAnswerStatus(); getParts();">
           {{ question.name }} </b-dropdown-item>
         </b-dropdown>
 
@@ -58,7 +58,9 @@
         class="mr-4 my-2">
         <b-dropdown-item v-for="part in parts" v-bind:key="part.part_num"
         @click="getSelectedPart(part.part_num); getAnswer();">
-          {{ part.part_num }} </b-dropdown-item>
+          {{ part.part_num }} {{ grades[parseInt(part.part_num)] === true ?
+          '&#9989;' : '&#10060;' }}
+          </b-dropdown-item>
         </b-dropdown>
     </div>
     <hr>
@@ -102,6 +104,7 @@ export default {
       selected_question: { name: '', format: '' },
       selected_part: { part_num: '', direction: '' },
       selected_answer: { response: '', correct: '' },
+      grades: {},
       assignments: [],
       questions: [],
       parts: [],
@@ -179,6 +182,23 @@ export default {
       if (result !== []) {
         [this.selected_part] = result;
       }
+    },
+    getAnswerStatus() {
+      const path = `http://localhost:5000/student/answers/${this.selected_assign.name}/${this.selected_question.name}`;
+      axios.get(path, {
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
+        },
+      })
+        .then((res) => {
+          console.log(res.data.answers);
+          this.grades = res.data.answers;
+        })
+        .catch((error) => {
+          // eslint-disable-next-line
+          console.error(error);
+        });
     },
     getAnswer() {
       const path = `http://localhost:5000/student/answer/${this.selected_assign.name}/${this.selected_question.name}/${this.selected_part.part_num}`;

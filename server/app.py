@@ -7,7 +7,7 @@ from cas import CASClient
 import random
 import secrets
 import shutil
-from datetime import datetime
+from datetime import datetime, timedelta
 import threading
 import os, signal
 
@@ -149,6 +149,9 @@ def status():
     return jsonify(response_object)
 
 def create_student(net_id, name, is_TA):
+    for s in amth_class.students:
+        if s.net_id == net_id:
+            return
     new_student = Student(
         net_id,
         name,
@@ -426,16 +429,24 @@ def part(assign_name, question_name, part_num):
 
     return jsonify(response_object)
 
-def f(f_stop, parent_pid):
-    if os.getpid() != parent_pid:
-        os.kill(os.getpid(), signal.SIGSTOP)
+next_call = datetime.now()
+
+backups = []
+def f(f_stop):
+    global next_call
+    backup_name = 'backups/class-backup-' + datetime.now().strftime('%m-%d-%Y_%H:%M') + '.db'
+    backups.append(backup_name)
+    if len(backups) > 7:
+        os.remove(backups.pop(0))
+    shutil.copyfile('class.db', backup_name)
+    # Set to twice a day, feel free to modify
+    next_call += timedelta(seconds = 60)
     if not f_stop.is_set():
-        # call f() again in 60 seconds
-        threading.Timer(1, f, [f_stop, os.getpid()]).start()
+        # call f() again in 12 hours
+        threading.Timer((next_call - datetime.now()).total_seconds(), f, [f_stop]).start()
+
 
 if __name__ == '__main__':
-
-    print(os.getpid())
 
     if amth_class.get_TAs() == []:
         head_ta = Student('jtn26', 'Jamie Nachbar', is_TA=True)
@@ -444,7 +455,9 @@ if __name__ == '__main__':
         sess.commit()
 
     f_stop = threading.Event()
-    f(f_stop, os.getpid())
+    # We don't want to run this twice
+    if os.getpid() % 2 == 0:
+        f(f_stop)
     
     web_status = 'online'
 
