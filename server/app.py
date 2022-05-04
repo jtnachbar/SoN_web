@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from tokenize import Double
 from flask import Flask, jsonify, request, session, redirect, url_for
 from flask_cors import CORS
 from itsdangerous import json
@@ -9,7 +9,7 @@ import secrets
 import shutil
 from datetime import datetime, timedelta
 import threading
-import os, signal
+import os
 
 
 from sqlalchemy.orm import sessionmaker
@@ -61,13 +61,15 @@ def check_ta_auth(request, response_object):
         return False
     else:
         TA_list = [s for s in amth_class.students if s.net_id == request.headers['Net_Id'] and s.is_TA]
-        if TA_list == None:
+        if TA_list == []:
             response_object['status'] = 'failure'
             return False
         else:
             TA = TA_list[0] 
             if request.headers['Authorization'] != TA.token:
                 print("Different Tokens")
+                print(TA.token)
+                print(request.headers['Authorization'])
                 response_object['status'] = 'failure'
                 return False
     return True
@@ -100,6 +102,7 @@ def login(ticket):
                 s.token = str(token)
                 if s.is_TA:
                     response_object['is_TA'] = 'true'
+                sess.commit()
     return(jsonify(response_object))
 
 def remove_student(net_id):
@@ -148,6 +151,39 @@ def status():
             web_status = put_data.get('status')
     return jsonify(response_object)
 
+@app.route('/gradesdata', methods=['GET'])
+def grades_data():
+    response_object = {'status': 'success'}
+    if not check_ta_auth(request, response_object):
+        return jsonify(response_object)
+    headers = 'name,net_id'
+    for assignment in amth_class.assignments:
+        headers += (',' + assignment.name)
+    headers += '\n'
+    response_object['headers'] = headers
+    grades = []
+    for s in amth_class.students:
+        grades.append([s.name, s.net_id])
+    for a in amth_class.assignments:
+        if a.published:
+            for row in grades:
+                total = 0
+                points = 0
+                for q in a.questions:
+                    for p in q.question_parts:
+                        student_answer = [ans for ans in p.student_answers if ans.net_id == row[1]][0]
+                        if student_answer.correct:
+                            points += p.point_val
+                        total += p.point_val
+                try:
+                    res = round(float(points / total), 3)
+                except ZeroDivisionError:
+                    res = '0 div'
+                row.append(res)
+    response_object['grades'] = grades
+    print(response_object)
+    return jsonify(response_object)
+
 def create_student(net_id, name, is_TA):
     for s in amth_class.students:
         if s.net_id == net_id:
@@ -181,8 +217,8 @@ def modify_student():
         if 'name' in post_data and 'net_id' in post_data:
             create_student(post_data.get('net_id'), post_data.get('name'), bool(post_data.get('is_ta')))
         elif 'names' in post_data and 'net_ids' in post_data:
-            net_ids = post_data.get('net_ids').split()
-            names = post_data.get('names').split()
+            net_ids = post_data.get('net_ids').split(',')
+            names = post_data.get('names').split(',')
             for i in range(len(names)):
                 create_student(net_ids[i], names[i], False)
         sess.commit()
@@ -431,20 +467,21 @@ def part(assign_name, question_name, part_num):
 
 next_call = datetime.now()
 
-backups = []
 def f(f_stop):
     global next_call
-    backup_name = 'backups/class-backup-' + datetime.now().strftime('%m-%d-%Y_%H:%M') + '.db'
-    backups.append(backup_name)
+    if not os.path.isdir('./backups'):
+        os.mkdir('./backups')
+    backups = os.listdir('backups')
+    backups.sort()
     if len(backups) > 7:
-        os.remove(backups.pop(0))
+        os.remove('backups/' + backups.pop(0))
+    backup_name = 'backups/class-backup-' + datetime.now().strftime('%m-%d-%Y_%H:%M') + '.db'
     shutil.copyfile('class.db', backup_name)
     # Set to twice a day, feel free to modify
-    next_call += timedelta(seconds = 60)
+    next_call += timedelta(seconds = 43200)
     if not f_stop.is_set():
         # call f() again in 12 hours
         threading.Timer((next_call - datetime.now()).total_seconds(), f, [f_stop]).start()
-
 
 if __name__ == '__main__':
 
@@ -454,10 +491,10 @@ if __name__ == '__main__':
         sess.add(head_ta)
         sess.commit()
 
-    f_stop = threading.Event()
+    #f_stop = threading.Event()
     # We don't want to run this twice
-    if os.getpid() % 2 == 0:
-        f(f_stop)
+    #if os.getpid() % 2 == 0:
+    #    f(f_stop)
     
     web_status = 'online'
 

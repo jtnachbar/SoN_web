@@ -63,6 +63,9 @@
           </b-dropdown-item>
         </b-dropdown>
     </div>
+    <div v-if="this.selected_assign.name != '' && !this.selected_assign.active" class="px-3 row">
+        <h5> This assignment is inactive.</h5>
+    </div>
     <hr>
     <div class="px-3 row">
       <a> {{ this.selected_question.format }} </a>
@@ -76,9 +79,10 @@
       <input class="col-2 mr-2 form-control"
             placeholder="Answer" v-model="selected_answer.response"
             maxlength = "13">
-      <button class='btn btn-success mb-2' @click="submitAnswer(); getAnswerDelay();">
+      <button class='btn btn-success mb-2' @click="submitAnswer(); getAnswerDelay();
+      getAnswerStatus()">
         Submit </button>
-      <h5 v-if="this.selected_answer.correct===null">
+      <h5 v-if="this.selected_answer.correct===''">
         <span class="ml-2 badge badge-secondary"> N/A </span> </h5>
       <h5 v-if="this.selected_answer.correct===true">
         <span class="ml-2 badge badge-success">  Correct </span> </h5>
@@ -210,7 +214,9 @@ export default {
       })
         .then((res) => {
           console.log(res.data.answer);
-          this.selected_answer = res.data.answer;
+          if (res.data.answer) {
+            this.selected_answer = res.data.answer;
+          }
         })
         .catch((error) => {
           // eslint-disable-next-line

@@ -90,6 +90,10 @@ def answer(assign_name, question_name, part_num):
         response_object['message'] = 'No assignment found'
         return jsonify(response_object)
     assign = assign_list[0]
+    if not assign.active:
+        response_object['status'] = 'failure'
+        response_object['message'] = 'Inactive Assignment'
+        return jsonify(response_object)
     question_list = [q for q in assign.questions if q.name==question_name]
     if question_list == []:
         response_object['status'] = 'failure'
@@ -112,7 +116,12 @@ def answer(assign_name, question_name, part_num):
             response_object['status'] = 'failure'
             response_object['message'] = 'No assignment found'
             return jsonify(response_object)
-        student_answer.response = patch_data['answer']
+        if len(patch_data['answer']) <= 10:
+            student_answer.response = patch_data['answer']
+        else:
+            response_object['status'] = 'failure'
+            response_object['message'] = 'Invalid Answer Format'
+            return jsonify(response_object)
         # evaluate the answer and set 'correct' accordingly
         param_list = [p.params for p in question.params if p.net_id == request.headers['Net_Id']][0]
         param_list = [p.param for p in param_list]

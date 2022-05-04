@@ -18,7 +18,8 @@
       <div class="row">
         <div class="col-6 form-group">
             <textarea v-model="format" class="form-control"
-            id="exampleFormControlTextarea1" rows="15"></textarea>
+            id="exampleFormControlTextarea1" rows="15"
+            placeholder='... ${1} ... ${2} ...'></textarea>
         </div>
         <div class="col">
             <div v-html="format"></div>

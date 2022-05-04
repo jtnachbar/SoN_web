@@ -36,14 +36,11 @@
         @click="showComp = 'manage_assign'">Edit Assignments</button>
         <br>
         <button class="btn btn-primary" type="button"
-        @click="showComp = 'manage_access'">Disable Access</button>
+        @click="downloadGradesCSV()">Download Grades</button>
       </div>
       <div class="col-12 </div>">
         <div v-show="this.showComp==='manage_class'">
           <ManageClass />
-        </div>
-        <div v-show="this.showComp==='manage_access'">
-          <ManageAccess />
         </div>
         <div v-show="this.showComp==='manage_assign'">
           <ManageAssign />
@@ -72,10 +69,11 @@
 <script>
 import Vue from 'vue';
 import VueSessionStorage from 'vue-sessionstorage';
+import axios from 'axios';
+
 import ManageTA from './ManageTA.vue';
 import ManageAssign from './ManageAssign/ManageAssign.vue';
 import ManageClass from './ManageClass.vue';
-import ManageAccess from './ManageAccess.vue';
 
 Vue.use(VueSessionStorage);
 Vue.config.productionTip = false;
@@ -84,13 +82,14 @@ export default {
   data() {
     return {
       showComp: '',
+      gradeHeaders: '',
+      gradeData: [],
     };
   },
   components: {
     ManageTA,
     ManageAssign,
     ManageClass,
-    ManageAccess,
   },
   computed: {
     manageComponent() {
@@ -100,8 +99,6 @@ export default {
         return 'ManageClass';
       } if (this.showComp === 'manage_ta') {
         return 'ManageTA';
-      } if (this.showComp === 'manage_access') {
-        return 'ManageAccess';
       } if (this.showComp === 'manage_home') {
         return 'ManageHome';
       }
@@ -109,13 +106,47 @@ export default {
     },
   },
   methods: {
-
+    getGradesData() {
+      const path = 'http://localhost:5000/gradesdata';
+      axios.get(path, {
+        headers: {
+          Authorization: `${this.token}`,
+          Net_Id: `${this.user}`,
+        },
+      })
+        .then((res) => {
+          this.gradeHeaders = res.data.headers;
+          this.gradeData = res.data.grades;
+        })
+        .catch((error) => {
+          // eslint-disable-next-line
+          console.error(error);
+        });
+    },
+    downloadGradesCSV() {
+      // Make API call
+      this.getGradesData();
+      let csv = this.gradeHeaders;
+      const csvdata = this.gradeData;
+      csvdata.forEach((row) => {
+        csv += row.join(',');
+        csv += '\n';
+      });
+      const anchor = document.createElement('a');
+      anchor.href = `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`;
+      anchor.target = '_blank';
+      anchor.download = 'student_grades.csv';
+      anchor.click();
+    },
   },
   created() {
     if (this.$session.get('is_TA') === 'false') {
       this.$router.push('/login?unauthorized=true');
     }
     this.showComp = 'manage_home';
+    this.token = this.$session.get('token');
+    this.user = this.$session.get('user');
+    this.getGradesData();
   },
 };
 </script>
