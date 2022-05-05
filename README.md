@@ -1,3 +1,7 @@
+# Structure of Networks Web
+
+## Directions:
+
 1. Run the server-side Flask app in one terminal window:
 
     ```sh
@@ -8,8 +12,6 @@
     (env)$ python app.py
     ```
 
-    Navigate to [http://localhost:5000](http://localhost:5000)
-
 2. Run the client-side Vue app in a different terminal window:
 
     ```sh
@@ -18,4 +20,4 @@
     $ npm run serve
     ```
 
-    Navigate to [http://localhost:8080](http://localhost:8080)
+    This will automatically serve content on localhost:8080

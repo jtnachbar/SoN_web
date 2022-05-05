@@ -296,6 +296,7 @@ export default {
           this.showMessage = true;
           this.selected_assign = { name: '', published: '', active: '' };
           this.selected_question = { name: '', format: '' };
+          this.selected_part = { part_num: '', direction: '', grading_rule: '' };
         })
         .catch((error) => {
           // eslint-disable-next-line
@@ -450,6 +451,7 @@ export default {
         },
       })
         .then((res) => {
+          this.selected_part = { part_num: '', direction: '', grading_rule: '' };
           this.selected_question = res.data.question;
         })
         .catch((error) => {

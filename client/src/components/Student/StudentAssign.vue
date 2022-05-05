@@ -58,8 +58,7 @@
         class="mr-4 my-2">
         <b-dropdown-item v-for="part in parts" v-bind:key="part.part_num"
         @click="getSelectedPart(part.part_num); getAnswer();">
-          {{ part.part_num }} {{ grades[parseInt(part.part_num)] === true ?
-          '&#9989;' : '&#10060;' }}
+          {{ part.part_num }}
           </b-dropdown-item>
         </b-dropdown>
     </div>
@@ -80,7 +79,7 @@
             placeholder="Answer" v-model="selected_answer.response"
             maxlength = "13">
       <button class='btn btn-success mb-2' @click="submitAnswer(); getAnswerDelay();
-      getAnswerStatus()">
+      getAnswerStatus(); getParts();">
         Submit </button>
       <h5 v-if="this.selected_answer.correct===''">
         <span class="ml-2 badge badge-secondary"> N/A </span> </h5>
@@ -174,6 +173,7 @@ export default {
         },
       })
         .then((res) => {
+          console.log(this.parts);
           this.parts = res.data.parts;
         })
         .catch((error) => {

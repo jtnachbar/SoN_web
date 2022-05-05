@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, current_app, request
 
-from Class import Class, Student, Assignment, Question, QuestionPart, Param, ParamList, Base
+from Class import Class
 
 student_api = Blueprint('student_api', __name__)
 
@@ -116,7 +116,7 @@ def answer(assign_name, question_name, part_num):
             response_object['status'] = 'failure'
             response_object['message'] = 'No assignment found'
             return jsonify(response_object)
-        if len(patch_data['answer']) <= 10:
+        if len(patch_data['answer']) <= 13:
             student_answer.response = patch_data['answer']
         else:
             response_object['status'] = 'failure'

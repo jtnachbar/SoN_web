@@ -1,0 +1,61 @@
+ <html>
+    <head>
+        <title> SoN Web </title>
+        <link rel="shortcut icon" href="images/favicon.ico">
+    </head>
+    <body>
+        <h1> Structure of Networks Web </h1>
+        <h2> Author: Jamie Nachbar <br>
+            Advisor: Ronald Coifman
+        </h2>
+        <hr><br>
+        <h3> Abstract </h3>
+        <div class="chunk">
+            This project is a web app built to facilitate the teaching of AMTH 160: Structure of Networks.
+            Structure of Networks is a unique course in that it is administered primarily by a series of scripts.
+            Homework is procedurally generated, assigned, and grades to each of over one hundred students. Before this project,
+            this was done as a patchwork series of dozens of Google Sheets, Forms, and Scripts. This app unifies the entire approach,
+            allowing for a greatly improved experience both for the teaching assistants who are creating and administering the assignments
+            as well as the students who complete the assignments. The frontend of the app is written in Vue, and the backend is written in python
+            and uses Flask to provide an API that the client can use to manage data relating to the course. One of the primary concerns with the
+            original system was the overly broad permissions that students had to agree to, and this system is integrated with Yale-CAS to 
+            allow students to authenticate themselves against that system; no passwords or personal information is stored by the app. Another key feature
+            of the app is the procedural generation and grading of the homework. In addition to adding students and other TAs to the class, the teaching assistants can specify rules 
+            for the generation of assignments by creating a different set of parameters for each student. They also specify how the student's 
+            answer is to be interpreted based on these parameters. Because of this flexibility, the use of this system goes beyond just 
+            Structure of Networks, this could be used for any class where answers are either right or wrong and the valid solution(s) 
+            to a problem can be specified in a script. Students can manage their submissions to assignments as well as check their grades for 
+            the course in a unified way, something that is missing from the current implementation.
+        </div>
+        <h3> Links </h3>
+        <div class="chunk">
+            <a href="documents/proposal.pdf">Original Report</a><br><br>
+            <a href="documents/user.pdf">User Guide</a><br><br>
+            <a href="documents/developer.pdf">Developer Guide</a><br><br>
+            <a href="https://github.com/jtnachbar/SoN_web">Github</a>
+        </div>
+        <h3> Images </h3>
+        <div class="row">
+            <img src="images/format.png" alt="Italian Trulli" style="width:45%; padding-left: 2vw;">
+            <img src="images/grading.png"  alt="Italian Trulli" style="width:45%; padding-left: 2vw;">
+            <img src="images/grading_rule.png"  alt="Italian Trulli" style="width:45%; padding-left: 2vw;">
+            <img src="images/multi_questions.png"  alt="Italian Trulli" style="width:45%; padding-left: 2vw;">
+            <img src="images/everything.png"  alt="Italian Trulli" style="width:45%; padding-left: 2vw;">
+            <img src="images/login.png"  alt="Italian Trulli" style="width:45%; padding-left: 2vw;">
+        </div>
+        <style>
+            h1 { text-align: center;}
+            h2 { text-align: center; font-size: 18;}
+            h3 { padding-left: 2vw; font-size: 18;}
+            a { text-decoration: none; }
+            body {
+                font-family: 'Arial', serif;
+            }
+            .chunk {
+                font-size: 16px;
+                padding-left: 2vw;
+                padding-right: 2vw;
+            }
+        </style>
+    </body>
+</html> 
